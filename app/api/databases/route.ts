@@ -7,6 +7,7 @@ import { getDefaultViews } from "@/lib/models/Database";
 import { getAuthUser } from "@/lib/authUser";
 import { getSharePermissionForProject, getShareTokenFromRequest } from "@/lib/shareAccess";
 import { hasRequiredPermission } from "@/lib/shareAccess";
+import { getCollaboratorPermissionForProject } from "@/lib/collaboratorAccess";
 
 type OrderedDbRef = {
   _id:   string;
@@ -51,6 +52,14 @@ export async function GET(req: Request) {
       const dbs = await Database.find({ projectId, userId: authUser.userId, ownerId: authUser.userId }).sort({ order: 1, createdAt: 1 });
       return NextResponse.json(dbs);
     }
+
+    // Collaborator access path (normal /projects/:id route)
+    const collaboratorPermission = await getCollaboratorPermissionForProject(projectId, authUser.email);
+    if (collaboratorPermission && hasRequiredPermission(collaboratorPermission, "view")) {
+      await getOrderedDatabases(projectId);
+      const dbs = await Database.find({ projectId }).sort({ order: 1, createdAt: 1 });
+      return NextResponse.json(dbs);
+    }
   }
 
   // Shared-link view access path
@@ -87,6 +96,18 @@ export async function POST(req: Request) {
 
     let targetOwnerId = authUser.userId;
     if (!ownedProject) {
+      const collaboratorPermission = await getCollaboratorPermissionForProject(String(body.projectId), authUser.email);
+      if (collaboratorPermission && hasRequiredPermission(collaboratorPermission, "edit")) {
+        const sharedProject = await Project.findById(body.projectId).select("_id ownerId");
+        if (!sharedProject) {
+          return NextResponse.json({ error: "Project not found" }, { status: 404 });
+        }
+
+        targetOwnerId = String(sharedProject.ownerId || "");
+        if (!targetOwnerId) {
+          return NextResponse.json({ error: "Project owner missing" }, { status: 400 });
+        }
+      } else {
       const shareToken = getShareTokenFromRequest(req);
       if (!shareToken) {
         return NextResponse.json({ error: "Project not found" }, { status: 404 });
@@ -105,6 +126,7 @@ export async function POST(req: Request) {
       targetOwnerId = String(sharedProject.ownerId || "");
       if (!targetOwnerId) {
         return NextResponse.json({ error: "Project owner missing" }, { status: 400 });
+      }
       }
     }
 

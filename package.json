@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "websocket": "ts-node lib/start-websocket.ts"
+    "websocket": "node websocket-server.cjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -60,6 +60,7 @@
     "reveal.js": "^4.5.0",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
+    "websocket": "^1.0.35",
     "ws": "^8.19.0",
     "xlsx": "^0.18.5",
     "y-websocket": "^3.0.0",

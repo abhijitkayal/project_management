@@ -1,21 +1,15 @@
-import { createServer, type IncomingMessage } from "http";
-import { WebSocketServer, WebSocket } from "ws";
-import * as Y from "yjs";
-import * as awarenessProtocol from "y-protocols/awareness";
-import * as syncProtocol from "y-protocols/sync";
-import * as encoding from "lib0/encoding";
-import * as decoding from "lib0/decoding";
-
-type RoomState = {
-  doc: Y.Doc;
-  awareness: awarenessProtocol.Awareness;
-  conns: Map<WebSocket, Set<number>>;
-};
+const { createServer } = require("http");
+const { WebSocketServer, WebSocket } = require("ws");
+const Y = require("yjs");
+const awarenessProtocol = require("y-protocols/awareness");
+const syncProtocol = require("y-protocols/sync");
+const encoding = require("lib0/encoding");
+const decoding = require("lib0/decoding");
 
 const MESSAGE_SYNC = 0;
 const MESSAGE_AWARENESS = 1;
 
-const rooms = new Map<string, RoomState>();
+const rooms = new Map();
 
 const server = createServer((_req, res) => {
   res.writeHead(200, { "Content-Type": "text/plain" });
@@ -24,23 +18,23 @@ const server = createServer((_req, res) => {
 
 const wss = new WebSocketServer({ server });
 
-function getRoomName(req: IncomingMessage): string {
+function getRoomName(req) {
   const url = req.url || "/";
   const pathname = url.split("?")[0] || "/";
   const room = decodeURIComponent(pathname.replace(/^\//, "")).trim();
   return room || "default-room";
 }
 
-function getOrCreateRoom(roomName: string): RoomState {
+function getOrCreateRoom(roomName) {
   const existing = rooms.get(roomName);
   if (existing) return existing;
 
   const doc = new Y.Doc();
   const awareness = new awarenessProtocol.Awareness(doc);
-  const conns = new Map<WebSocket, Set<number>>();
-  const roomState: RoomState = { doc, awareness, conns };
+  const conns = new Map();
+  const roomState = { doc, awareness, conns };
 
-  doc.on("update", (update: Uint8Array, origin: unknown) => {
+  doc.on("update", (update, origin) => {
     const encoder = encoding.createEncoder();
     encoding.writeVarUint(encoder, MESSAGE_SYNC);
     syncProtocol.writeUpdate(encoder, update);
@@ -53,12 +47,7 @@ function getOrCreateRoom(roomName: string): RoomState {
     });
   });
 
-  awareness.on(
-    "update",
-    (
-      { added, updated, removed }: { added: number[]; updated: number[]; removed: number[] },
-      origin: unknown
-    ) => {
+  awareness.on("update", ({ added, updated, removed }, origin) => {
     const changedClients = added.concat(updated, removed);
 
     if (origin instanceof WebSocket) {
@@ -82,18 +71,17 @@ function getOrCreateRoom(roomName: string): RoomState {
         conn.send(message);
       }
     });
-    }
-  );
+  });
 
   rooms.set(roomName, roomState);
   return roomState;
 }
 
-function closeConnection(roomName: string, ws: WebSocket) {
+function closeConnection(roomName, ws) {
   const room = rooms.get(roomName);
   if (!room) return;
 
-  const controlled = room.conns.get(ws) || new Set<number>();
+  const controlled = room.conns.get(ws) || new Set();
   room.conns.delete(ws);
 
   awarenessProtocol.removeAwarenessStates(room.awareness, Array.from(controlled), ws);
@@ -105,7 +93,7 @@ function closeConnection(roomName: string, ws: WebSocket) {
   }
 }
 
-function sendInitialSync(ws: WebSocket, room: RoomState) {
+function sendInitialSync(ws, room) {
   const syncEncoder = encoding.createEncoder();
   encoding.writeVarUint(syncEncoder, MESSAGE_SYNC);
   syncProtocol.writeSyncStep1(syncEncoder, room.doc);
@@ -126,7 +114,7 @@ function sendInitialSync(ws: WebSocket, room: RoomState) {
   }
 }
 
-function toUint8Array(data: Buffer | ArrayBuffer | Buffer[]): Uint8Array {
+function toUint8Array(data) {
   if (Array.isArray(data)) {
     return new Uint8Array(Buffer.concat(data));
   }
@@ -136,14 +124,14 @@ function toUint8Array(data: Buffer | ArrayBuffer | Buffer[]): Uint8Array {
   return new Uint8Array(data);
 }
 
-wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
+wss.on("connection", (ws, req) => {
   const roomName = getRoomName(req);
   const room = getOrCreateRoom(roomName);
 
-  room.conns.set(ws, new Set<number>());
+  room.conns.set(ws, new Set());
   sendInitialSync(ws, room);
 
-  ws.on("message", (data: Buffer | ArrayBuffer | Buffer[]) => {
+  ws.on("message", (data) => {
     const decoder = decoding.createDecoder(toUint8Array(data));
     const messageType = decoding.readVarUint(decoder);
 
@@ -173,4 +161,4 @@ server.listen(PORT, () => {
   console.log(`Yjs WebSocket server listening on ws://localhost:${PORT}`);
 });
 
-export default server;
+module.exports = server;

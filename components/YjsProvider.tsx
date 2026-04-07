@@ -39,7 +39,7 @@ export function useYjsTable(roomName: string, options?: YjsTableOptions) {
 
     // Connect to WebSocket server (you'll need to set this up)
     const wsProvider = new WebsocketProvider(
-      `ws://localhost:1234/${roomName}`, // WebSocket server URL
+      "ws://localhost:1234", // WebSocket server URL
       roomName, // Room name
       ydoc
     );

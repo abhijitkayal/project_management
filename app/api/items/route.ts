@@ -5,6 +5,7 @@ import Database from "@/lib/models/Database";
 import DatabaseProperty from "@/lib/models/DatabaseProperty";
 import { getAuthUser } from "@/lib/authUser";
 import { getSharePermissionForProject, getShareTokenFromRequest, hasRequiredPermission } from "@/lib/shareAccess";
+import { getCollaboratorPermissionForProject } from "@/lib/collaboratorAccess";
 
 export async function GET(req: Request) {
   await connectDB();
@@ -25,6 +26,10 @@ export async function GET(req: Request) {
 
   if (authUser?.userId) {
     if (String(database.ownerId) !== authUser.userId) {
+      const collaboratorPermission = await getCollaboratorPermissionForProject(String(database.projectId), authUser.email);
+      if (collaboratorPermission && hasRequiredPermission(collaboratorPermission, "view")) {
+        // Collaborator has direct project access.
+      } else {
       const shareToken = getShareTokenFromRequest(req);
       if (!shareToken) {
         return NextResponse.json([], { status: 200 });
@@ -33,6 +38,7 @@ export async function GET(req: Request) {
       const permission = await getSharePermissionForProject(String(database.projectId), shareToken);
       if (!permission || !hasRequiredPermission(permission, "view")) {
         return NextResponse.json([], { status: 200 });
+      }
       }
     }
   } else {
@@ -89,13 +95,16 @@ export async function POST(req: Request) {
   }
 
   if (String(database.ownerId) !== authUser.userId) {
-    const shareToken = getShareTokenFromRequest(req);
-    if (!shareToken) {
-      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
-    }
-    const permission = await getSharePermissionForProject(String(database.projectId), shareToken);
-    if (!permission || !hasRequiredPermission(permission, "edit")) {
-      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    const collaboratorPermission = await getCollaboratorPermissionForProject(String(database.projectId), authUser.email);
+    if (!collaboratorPermission || !hasRequiredPermission(collaboratorPermission, "edit")) {
+      const shareToken = getShareTokenFromRequest(req);
+      if (!shareToken) {
+        return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+      }
+      const permission = await getSharePermissionForProject(String(database.projectId), shareToken);
+      if (!permission || !hasRequiredPermission(permission, "edit")) {
+        return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+      }
     }
   }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import type { DbView } from "@/components/DatabaseViewtabs";
 import { useYjsTable } from "@/components/YjsProvider";
@@ -29,6 +29,16 @@ type Item = {
   title?: string;
   values?: Record<string, unknown>;
 };
+
+function dedupeById<T extends { _id?: string }>(list: T[]): T[] {
+  const map = new Map<string, T>();
+  list.forEach((item) => {
+    const id = String(item?._id || "");
+    if (!id) return;
+    map.set(id, item);
+  });
+  return Array.from(map.values());
+}
 
 export default function TableView({
   databaseId,
@@ -73,8 +83,11 @@ export default function TableView({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const prevPropertyCount = useRef(0);
 
-  const properties = (yjsInitialized ? yjsProperties : localProperties) as Property[];
-  const rows = (yjsInitialized ? yjsRows : localRows) as Item[];
+  const rawProperties = (yjsInitialized ? yjsProperties : localProperties) as Property[];
+  const rawRows = (yjsInitialized ? yjsRows : localRows) as Item[];
+
+  const properties = useMemo(() => dedupeById<Property>(rawProperties), [rawProperties]);
+  const rows = useMemo(() => dedupeById<Item>(rawRows), [rawRows]);
 
   const fetchProperties = async () => {
     const res = await fetch(`/api/properties?databaseId=${databaseId}`);
@@ -115,8 +128,8 @@ export default function TableView({
 
       if (!active) return;
 
-      const nextProperties = Array.isArray(propData) ? propData : [];
-      const nextRows = Array.isArray(rowData) ? rowData : [];
+      const nextProperties = dedupeById<Property>(Array.isArray(propData) ? propData : []);
+      const nextRows = dedupeById<Item>(Array.isArray(rowData) ? rowData : []);
 
       if (yjsInitialized) {
         if (yjsProperties.length === 0) {
@@ -136,27 +149,21 @@ export default function TableView({
     return () => {
       active = false;
     };
-  }, [databaseId, activeView?.type]);
+  }, [databaseId, activeView?.type, yjsInitialized, yjsProperties.length, yjsRows.length, replaceProperties, replaceRows]);
 
   useEffect(() => {
     if (!yjsInitialized) return;
 
-    if (localProperties.length > 0 && yjsProperties.length === 0) {
-      replaceProperties(localProperties);
+    const uniqueProperties = dedupeById<Property>(yjsProperties as Property[]);
+    if (uniqueProperties.length !== yjsProperties.length) {
+      replaceProperties(uniqueProperties);
     }
 
-    if (localRows.length > 0 && yjsRows.length === 0) {
-      replaceRows(localRows);
+    const uniqueRows = dedupeById<Item>(yjsRows as Item[]);
+    if (uniqueRows.length !== yjsRows.length) {
+      replaceRows(uniqueRows);
     }
-  }, [
-    localProperties,
-    localRows,
-    yjsInitialized,
-    yjsProperties.length,
-    yjsRows.length,
-    replaceProperties,
-    replaceRows,
-  ]);
+  }, [yjsInitialized, yjsProperties, yjsRows, replaceProperties, replaceRows]);
 
   const addRow = async () => {
     setMyActivity("Adding a row");

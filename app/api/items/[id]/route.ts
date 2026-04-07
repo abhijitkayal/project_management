@@ -6,6 +6,7 @@ import DatabaseProperty from "@/lib/models/DatabaseProperty";
 import { getAuthUser } from "@/lib/authUser";
 import nodemailer from "nodemailer";
 import { getSharePermissionForProject, getShareTokenFromRequest, hasRequiredPermission } from "@/lib/shareAccess";
+import { getCollaboratorPermissionForProject } from "@/lib/collaboratorAccess";
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -63,7 +64,18 @@ export async function PATCH(
 
   if (authUser?.userId) {
     if (String(database.ownerId) !== authUser.userId) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      const collaboratorPermission = await getCollaboratorPermissionForProject(String(database.projectId), authUser.email);
+      if (!collaboratorPermission || !hasRequiredPermission(collaboratorPermission, "edit")) {
+        const shareToken = getShareTokenFromRequest(req);
+        if (!shareToken) {
+          return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        const permission = await getSharePermissionForProject(String(database.projectId), shareToken);
+        if (!permission || !hasRequiredPermission(permission, "edit")) {
+          return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+      }
     }
   } else {
     const shareToken = getShareTokenFromRequest(req);
@@ -161,13 +173,16 @@ export async function DELETE(
   }
 
   if (String(database.ownerId) !== authUser.userId) {
-    const shareToken = getShareTokenFromRequest(req);
-    if (!shareToken) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-    const permission = await getSharePermissionForProject(String(database.projectId), shareToken);
-    if (!permission || !hasRequiredPermission(permission, "edit")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const collaboratorPermission = await getCollaboratorPermissionForProject(String(database.projectId), authUser.email);
+    if (!collaboratorPermission || !hasRequiredPermission(collaboratorPermission, "edit")) {
+      const shareToken = getShareTokenFromRequest(req);
+      if (!shareToken) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+      const permission = await getSharePermissionForProject(String(database.projectId), shareToken);
+      if (!permission || !hasRequiredPermission(permission, "edit")) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
   }
 
