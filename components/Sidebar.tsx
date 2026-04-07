@@ -15,7 +15,7 @@ import {
   MoreHorizontal, Pin, PinOff, Smile,
   Database, Table, Layout as LayoutIcon, CheckSquare,
   Film, BarChart2, FileCode, Link2, Globe, Presentation,
-  Folder, UserCircle2,
+  Folder,
 } from "lucide-react";
 import logo from "../public/uploads/OORK_SPACE_Logos-removebg-preview.png";
 import Image from "next/image";
@@ -36,9 +36,9 @@ export const EMOJI_LIST = [
 
 /* ── Types ── */
 type MenuKey =
-  | "dashboard" | "project-board" | "docs" | "task-board"
+  | "dashboard" | "project-board" | "whiteboard" | "presentation" | "video-editing" | "social-media" | "task-board"
   | "schedule"  | "activities"    | "inbox"
-  | "template"  | "market-places" | "profile";
+  | "template"  | "market-places";
 
 type SidebarPage = {
   _id: string; pageName: string; menuKey: MenuKey;
@@ -252,6 +252,13 @@ function ProjectItem({
     isDark ? "text-gray-300 hover:bg-gray-800 hover:text-white" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
   }`;
 
+  const filteredDbs = databases.filter(
+  (db) =>
+    db.viewType !== "socialmedia" &&
+    db.viewType !== "video" &&
+    db.viewType !== "whiteboard" &&
+    db.viewType !== "presentation"
+);
   return (
     <div>
       <div className={`flex items-center gap-1 group/proj rounded-xl px-1 py-0.5 transition-colors ${
@@ -364,7 +371,6 @@ function ProjectItem({
             )}
           </AnimatePresence>
         </div>
-
       </div>
 
       <AnimatePresence initial={false}>
@@ -378,10 +384,10 @@ function ProjectItem({
             style={{ overflow: "hidden" }}
           >
             <div className={`ml-4 mt-0.5 pl-3 border-l space-y-0.5 pb-1 ${isDark ? "border-gray-700/60" : "border-gray-200"}`}>
-              {databases.length === 0 ? (
+              {filteredDbs.length === 0 ? (
                 <p className={`text-[10px] py-1.5 pl-1 italic ${isDark?"text-gray-700":"text-gray-400"}`}>No databases yet.</p>
               ) : (
-                databases.map((db) => (
+                filteredDbs.map((db) => (
                   <button key={db._id} type="button"
                     onClick={(e) => { e.stopPropagation(); onOpenDb(project._id, db._id); }}
                     className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-colors text-left ${
@@ -577,13 +583,19 @@ export default function Sidebar({ view, setView }: SidebarProps) {
     ...projects.filter((p) => pinnedProjects.has(p._id)),
     ...projects.filter((p) => !pinnedProjects.has(p._id)),
   ];
+  // console.log(sortedProjects);
 
   const docsPath = user?.id ? `/editor/${user.id}` : "/editor";
   
   const menuItems: { key: MenuKey; label: string; path: string; icon: React.ReactNode }[] = [
     { key: "dashboard",     label: "Dashboard",     path: "/",              icon: <LayoutGrid size={open?20:22}/> },
     { key: "project-board", label: "Project Board", path: "/project-board", icon: <Folder size={open?22:24}/> },
-    { key: "docs", label: "Docs", path: docsPath, icon: <FileText size={open?20:22}/> },
+    // { key: "docs", label: "Docs", path: docsPath, icon: <FileText size={open?20:22}/> },
+    {key: "whiteboard", label:"Whiteboard", path:"/whiteboard", icon: <Folder size={open?22:24}/> },
+    {key: "presentation", label:"Presentation", path:"/presentation", icon: <Folder size={open?22:24}/> },
+    {key: "video-editing", label:"VideoEditing", path:"/video-editing", icon: <Folder size={open?22:24}/> },
+    {key: "social-media", label:"SocialMedia", path:"/socialmedia", icon: <Folder size={open?22:24}/> },
+
     { key: "task-board",    label: "Task Board",    path: "/task-board",    icon: <FileText   size={open?20:22}/> },
     { key: "schedule",      label: "Schedule",      path: "/schedule",      icon: <Calendar   size={open?20:22}/> },
     { key: "activities",    label: "Activities",    path: "/activities",    icon: <Activity   size={open?20:22}/> },
@@ -641,9 +653,31 @@ export default function Sidebar({ view, setView }: SidebarProps) {
                           <motion.span layout className="font-medium">{item.label}</motion.span>
                           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                             <button
-                              onClick={() => item.key==="project-board" ? setCreateProjectModalOpen(true) : openCreateModal(item.key)}
+                              onClick={() => {
+                                if (item.key === "project-board") {
+                                  setCreateProjectModalOpen(true);
+                                  return;
+                                }
+                                if (item.key === "whiteboard") {
+                                  navigateTo("/whiteboard");
+                                  return;
+                                }
+                                if (item.key === "video-editing") {
+                                  navigateTo("/video-editing");
+                                  return;
+                                }
+                                if (item.key === "presentation") {
+                                  navigateTo("/presentation");
+                                  return;
+                                }
+                                if (item.key === "social-media") {
+                                  navigateTo("/socialmedia");
+                                  return;
+                                }
+                                openCreateModal(item.key);
+                              }}
                               className={`p-1 rounded-md ${hoverClass}`} title="Add">
-                              {item.key!=="dashboard" && <Plus size={16}/>}
+                              {item.key!=="dashboard" && item.key!=="whiteboard" && item.key!=="video-editing" && item.key!=="presentation" && item.key!=="social-media" && <Plus size={16}/>}
                             </button>
                             {item.key==="project-board" && (
                               <button onClick={() => setProjectBoardOpen((v)=>!v)} className={`p-1 rounded-md ${hoverClass}`}>
@@ -672,7 +706,7 @@ export default function Sidebar({ view, setView }: SidebarProps) {
                               <div key={project._id} className="relative">
                                 <div className={`absolute left-[8px] top-3 w-[28px] h-[14px] border-l-2 border-b-2 rounded-bl-lg ${isDark?"border-gray-600":"border-gray-400"}`}/>
                                 <div className="ml-[32px]">
-                                  <ProjectItem
+                                   <ProjectItem
                                     project={project} isDark={isDark}
                                     databases={databasesByProject[project._id] || []}
                                     isCollapsed={collapsedProjects.has(project._id)}
@@ -754,62 +788,20 @@ export default function Sidebar({ view, setView }: SidebarProps) {
               </button>
             )}
           </div> */}
-
-          {/* Mobile profile shortcut */}
-          <div className="lg:hidden mt-4 px-1">
-            <button
-              type="button"
-              onClick={() => navigateTo("/profile")}
-              className={`w-full flex items-center gap-2 rounded-xl px-4 py-3 transition-colors ${
-                pathname === "/profile"
-                  ? "bg-gradient-to-r from-teal-600 to-rose-600 text-white"
-                  : isDark
-                  ? "text-gray-300 hover:bg-white/10"
-                  : "text-gray-700 hover:bg-rose-100"
-              }`}
-              title="Profile"
-            >
-              <UserCircle2 size={18} />
-              <span className="text-sm font-medium">Profile</span>
-            </button>
-          </div>
         </div>
       </div>
 
       {/* Collapse button */}
-      <div
-        className={`hidden lg:flex fixed bottom-0 left-0 z-50 flex-col ${isDark ? "bg-[#0F1014]" : "bg-rose-50"}`}
-        style={{ width: open ? "300px" : "80px" }}
-      >
-        <motion.button
-          layout
-          onClick={() => setOpen((v) => !v)}
-          className={`flex border-t ${isDark ? "border-gray-800 hover:bg-[#1a1b1e]" : "border-rose-200 hover:bg-rose-100"}`}
-        >
-          <div className={`flex items-center ${open ? "justify-start px-4" : "justify-center"} p-2`}>
-            <motion.div layout className={`grid ${open ? "size-10" : "size-8"} place-content-center`}>
-              <FiChevronsRight className={`${!open && "rotate-180"} ${isDark ? "text-gray-400" : "text-gray-600"}`} size={open ? 20 : 18} />
-            </motion.div>
-            {open && <motion.span layout className="text-xs font-medium">Hide</motion.span>}
-          </div>
-        </motion.button>
-
-        <button
-          type="button"
-          onClick={() => navigateTo("/profile")}
-          className={`flex items-center border-t transition-colors ${
-            pathname === "/profile"
-              ? "bg-gradient-to-r from-teal-600 to-rose-600 text-white"
-              : isDark
-              ? "border-gray-800 text-gray-300 hover:bg-[#1a1b1e]"
-              : "border-rose-200 text-gray-700 hover:bg-rose-100"
-          } ${open ? "justify-start px-4 py-3 gap-2" : "justify-center py-3"}`}
-          title="Profile"
-        >
-          <UserCircle2 size={open ? 18 : 20} />
-          {open && <span className="text-xs font-medium">Profile</span>}
-        </button>
-      </div>
+      <motion.button layout onClick={()=>setOpen((v)=>!v)}
+        className={`hidden lg:flex fixed bottom-0 left-0 border-t z-50 ${isDark?"border-gray-800 bg-[#0F1014] hover:bg-[#1a1b1e]":"border-rose-200 bg-rose-50 hover:bg-rose-100"}`}
+        style={{ width:open?"300px":"80px" }}>
+        <div className={`flex items-center ${open?"justify-start px-4":"justify-center"} p-2`}>
+          <motion.div layout className={`grid ${open?"size-10":"size-8"} place-content-center`}>
+            <FiChevronsRight className={`${!open&&"rotate-180"} ${isDark?"text-gray-400":"text-gray-600"}`} size={open?20:18}/>
+          </motion.div>
+          {open&&<motion.span layout className="text-xs font-medium">Hide</motion.span>}
+        </div>
+      </motion.button>
     </>
   );
 

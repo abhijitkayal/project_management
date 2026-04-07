@@ -12,10 +12,7 @@ const OPTIONS: { type: ViewType; title: string; desc: string; icon: string }[] =
   { type:"editor",          title:"Editor",          desc:"Task list",              icon:"✅"  },
  
   { type:"documentation", title:"Documentation", desc:"Rich document editor",   icon:"🧾"  },
-  { type:"presentation",  title:"Presentation",  desc:"Slides and decks",       icon:"🎯"  },
-  { type:"video",         title:"Video Editing", desc:"Edit and trim videos",   icon:"🎥"  },
-  { type:"whiteboard",    title:"Whiteboard",    desc:"Sketch and collaborate", icon:"✏️" },
-  { type:"socialmedia",   title:"Social Media",  desc:"Create social posts",    icon:"📱"  },
+  // { type:"presentation",  title:"Presentation",  desc:"Slides and decks",       icon:"🎯"  },
   { type:"chart",         title:"Charts",        desc:"Data visualizations",    icon:"📊"  },
 ];
 
@@ -28,21 +25,8 @@ const TEMPLATES: Record<string, { id: number; name: string; desc: string }[]> = 
  
   documentation: [{ id:1,name:"Blank Document",     desc:"Start with a clean slate" },{ id:2,name:"Resume / CV",desc:"Professional resume template" },{ id:3,name:"Report",desc:"Formal report with sections" }],
 
-  presentation:  [{ id:1,name:"Blank Presentation", desc:"Start from scratch" },{ id:2,name:"Business Pitch", desc:"Professional pitch deck" },{ id:3,name:"Product Demo", desc:"Product showcase slides" }],
-  video:         [{ id:1,name:"Blank Video",        desc:"Start from scratch" },{ id:2,name:"Tutorial",       desc:"Step-by-step tutorial" },{ id:3,name:"Promotional",   desc:"Marketing video" }],
-  whiteboard:    [{ id:1,name:"Blank Canvas",       desc:"Start from scratch" },{ id:2,name:"Brainstorm",     desc:"Collaborative brainstorm" },{ id:3,name:"Wireframe",desc:"Design wireframes" }],
-  socialmedia:   [
-    { id:1,name:"Instagram Post",    desc:"Square 1080×1080 feed post" },
-    { id:2,name:"Instagram Story",   desc:"Vertical 1080×1920 story" },
-    { id:3,name:"Facebook Post",     desc:"Landscape 1200×630 post" },
-    { id:4,name:"Twitter/X Post",    desc:"Wide 1600×900 tweet card" },
-    { id:5,name:"LinkedIn Post",     desc:"Professional 1200×627 post" },
-    { id:6,name:"YouTube Thumbnail", desc:"Video thumbnail 1280×720" },
-    { id:7,name:"Pinterest Pin",     desc:"Tall vertical 1000×1500 pin" },
-    { id:8,name:"TikTok Cover",      desc:"Vertical 1080×1920 cover" },
-    { id:9,name:"WhatsApp Status",   desc:"Status card 1080×1920" },
-    { id:10,name:"Snapchat Story",   desc:"Vertical snap 1080×1920" },
-  ],
+  // presentation:  [{ id:1,name:"Blank Presentation", desc:"Start from scratch" },{ id:2,name:"Business Pitch", desc:"Professional pitch deck" },{ id:3,name:"Product Demo", desc:"Product showcase slides" }],
+
   chart: [
     { id:1, name:"Bar Chart",    desc:"Compare categories horizontally" },
     { id:2, name:"Line Chart",   desc:"Show trends & changes over time" },
@@ -77,14 +61,8 @@ export default function ViewPickerCard({
 
     let templateName = "blank";
     if (selectedCategory === "presentation")  templateName = templateId===1?"blank":templateId===2?"business":"product";
-    else if (selectedCategory === "video")    templateName = templateId===1?"blank":templateId===2?"tutorial":"promotional";
-    else if (selectedCategory === "whiteboard") templateName = templateId===1?"blank":templateId===2?"brainstorm":"wireframe";
     else if (selectedCategory === "documentation") templateName = templateId===1?"blank":templateId===2?"resume":"report";
     else if (selectedCategory === "chart")    templateName = CHART_TEMPLATE_NAMES[templateId] || "bar";
-    else if (selectedCategory === "socialmedia") {
-      const smNames = ["instagram-post","instagram-story","facebook-post","twitter-post","linkedin-post","youtube-thumbnail","pinterest-pin","tiktok-cover","whatsapp-status","snapchat-story"];
-      templateName = smNames[templateId-1] || "blank";
-    }
 
     try {
       const res = await fetch("/api/databases", {
@@ -130,11 +108,11 @@ export default function ViewPickerCard({
                   <SidebarButton key={o.type} option={o} isActive={selectedCategory===o.type} isDark={isDark} onClick={()=>setSelectedCategory(o.type)}/>
                 ))}
               </SidebarSection>
-              <SidebarSection title="Media & Collaboration" isDark={isDark}>
-                {OPTIONS.filter(o=>["presentation","video","whiteboard","socialmedia"].includes(o.type)).map(o=>(
+              {/* <SidebarSection title="Media & Collaboration" isDark={isDark}>
+                {OPTIONS.filter(o=>["presentation"].includes(o.type)).map(o=>(
                   <SidebarButton key={o.type} option={o} isActive={selectedCategory===o.type} isDark={isDark} onClick={()=>setSelectedCategory(o.type)}/>
                 ))}
-              </SidebarSection>
+              </SidebarSection> */}
               <SidebarSection title="Notes & Docs" isDark={isDark}>
                 {OPTIONS.filter(o=>["editor","text","documentation","pagelink"].includes(o.type)).map(o=>(
                   <SidebarButton key={o.type} option={o} isActive={selectedCategory===o.type} isDark={isDark} onClick={()=>setSelectedCategory(o.type)}/>
@@ -175,11 +153,8 @@ export default function ViewPickerCard({
                         {selectedCategory==="gallery"       && <GalleryTemplatePreview templateId={template.id}/>}
                         
                         {selectedCategory==="documentation" && <DocumentationTemplatePreview templateId={template.id}/>}
-                        
                         {selectedCategory==="presentation"  && <PresentationTemplatePreview templateId={template.id}/>}
-                        {selectedCategory==="video"         && <VideoTemplatePreview templateId={template.id}/>}
-                        {selectedCategory==="whiteboard"    && <WhiteboardTemplatePreview templateId={template.id}/>}
-                        {selectedCategory==="socialmedia"   && <SocialMediaTemplatePreview templateId={template.id}/>}
+                        
                         {selectedCategory==="chart"         && <ChartTemplatePreview templateId={template.id}/>}
                       </div>
                     </div>
@@ -217,7 +192,7 @@ function SidebarSection({ title, isDark, children }: { title: string; isDark?: b
   );
 }
 
-function SidebarButton({ option, isActive, isDark, onClick }: { option: any; isActive: boolean; isDark?: boolean; onClick: () => void }) {
+function SidebarButton({ option, isActive, isDark, onClick }: { option: { icon: string; title: string; desc: string }; isActive: boolean; isDark?: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick}
       className={`w-full flex items-center gap-2 lg:gap-3 px-2 lg:px-3 py-2 lg:py-2.5 rounded-lg text-left transition ${isActive ? isDark?"bg-gray-700 shadow-sm font-medium":"bg-white shadow-sm font-medium" : isDark?"hover:bg-gray-700":"hover:bg-gray-100"}`}>
@@ -301,54 +276,12 @@ function DocumentationTemplatePreview({ templateId }: { templateId: number }) {
     </div>
   );
 }
-function PresentationTemplatePreview({ templateId }: { templateId: number }) {
-  const labels = ["Blank Slides","Business Pitch","Product Demo"];
-  return (
-    <div className="w-full bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg p-4 flex flex-col items-center justify-center text-white">
-      <div className="text-3xl mb-2">🎯</div>
-      <div className="text-[10px] font-semibold text-center">{labels[templateId-1]}</div>
-      <div className="mt-2 flex gap-1"><div className="w-8 h-6 bg-white/30 rounded-sm"/><div className="w-8 h-6 bg-white/20 rounded-sm"/></div>
-    </div>
-  );
-}
-function VideoTemplatePreview({ templateId }: { templateId: number }) {
-  const labels = ["Blank","Tutorial","Promotional"];
-  return (
-    <div className="w-full bg-gray-900 rounded-lg p-4 flex flex-col items-center justify-center text-white">
-      <div className="text-3xl mb-2">🎥</div>
-      <div className="text-[10px] font-semibold text-center">{labels[templateId-1]}</div>
-      <div className="mt-2 w-full bg-gray-700 h-1 rounded-full"><div className="bg-red-500 h-1 rounded-full" style={{width:`${templateId*30}%`}}/></div>
-    </div>
-  );
-}
 function WhiteboardTemplatePreview({ templateId }: { templateId: number }) {
   const labels = ["Blank Canvas","Brainstorm","Wireframe"];
   return (
     <div className="w-full bg-white rounded-lg p-4 flex flex-col items-center justify-center border-2 border-gray-200">
       <div className="text-3xl mb-2">✏️</div>
       <div className="text-[10px] font-semibold">{labels[templateId-1]}</div>
-    </div>
-  );
-}
-function SocialMediaTemplatePreview({ templateId }: { templateId: number }) {
-  const configs = [
-    { label:"Instagram Post", bg:"from-purple-500 to-pink-500",   icon:"📸", ratio:"1:1"    },
-    { label:"Instagram Story",bg:"from-pink-500 to-orange-400",   icon:"📱", ratio:"9:16"   },
-    { label:"Facebook Post",  bg:"from-blue-600 to-blue-400",     icon:"👍", ratio:"1.91:1" },
-    { label:"Twitter/X",      bg:"from-sky-500 to-cyan-400",      icon:"🐦", ratio:"16:9"   },
-    { label:"LinkedIn",       bg:"from-blue-700 to-blue-500",     icon:"💼", ratio:"1.91:1" },
-    { label:"YouTube",        bg:"from-red-600 to-red-400",       icon:"▶️", ratio:"16:9"   },
-    { label:"Pinterest",      bg:"from-red-500 to-rose-400",      icon:"📌", ratio:"2:3"    },
-    { label:"TikTok",         bg:"from-gray-900 to-gray-700",     icon:"🎵", ratio:"9:16"   },
-    { label:"WhatsApp",       bg:"from-green-500 to-emerald-400", icon:"💬", ratio:"9:16"   },
-    { label:"Snapchat",       bg:"from-yellow-400 to-yellow-300", icon:"👻", ratio:"9:16"   },
-  ];
-  const c = configs[templateId-1]||configs[0];
-  return (
-    <div className={`w-full bg-gradient-to-br ${c.bg} rounded-lg p-4 flex flex-col items-center justify-center text-white`}>
-      <div className="text-3xl mb-1">{c.icon}</div>
-      <div className="text-[10px] font-bold text-center">{c.label}</div>
-      <div className="text-[9px] text-white/70">{c.ratio}</div>
     </div>
   );
 }
@@ -469,6 +402,17 @@ function ChartTemplatePreview({ templateId }: { templateId: number }) {
           {c.preview}
         </div>
       </div>
+    </div>
+  );
+}
+
+function PresentationTemplatePreview({ templateId }: { templateId: number }) {
+  const labels = ["Blank Slides","Business Pitch","Product Demo"];
+  return (
+    <div className="w-full bg-linear-to-br from-indigo-600 to-purple-600 rounded-lg p-4 flex flex-col items-center justify-center text-white">
+      <div className="text-3xl mb-2">🎯</div>
+      <div className="text-[10px] font-semibold text-center">{labels[templateId-1]}</div>
+      <div className="mt-2 flex gap-1"><div className="w-8 h-6 bg-white/30 rounded-sm"/><div className="w-8 h-6 bg-white/20 rounded-sm"/></div>
     </div>
   );
 }

@@ -186,6 +186,7 @@ function DraggableDatabaseSection({
   );
 }
 
+
 /* ══════════════════════════════════════════════════════════════
    DatabaseTabs — main export
 ══════════════════════════════════════════════════════════════ */
@@ -300,6 +301,13 @@ export default function DatabaseTabs({
     const targetTop = scrollParent.scrollTop + (elementRect.top - parentRect.top) - topGap;
     scrollParent.scrollTo({ top: Math.max(targetTop, 0), behavior: "smooth" });
   };
+  const filteredDbs = orderedDbs.filter(
+  (db) =>
+    db.viewType !== "socialmedia" &&
+    db.viewType !== "video" &&
+    db.viewType !== "whiteboard" &&
+    db.viewType !== "presentation"
+);
 
   /* ── Empty state ── */
   if (dbs.length === 0) {
@@ -332,25 +340,31 @@ export default function DatabaseTabs({
 
   return (
     <div className="space-y-6">
-      {orderedDbs.map((db) => (
-        <DraggableDatabaseSection
-          key={db._id}
-          db={db}
-          projectId={projectId}
-          isDark={isDark}
-          isViewOnly={isViewOnly}
-          onAddBelow={openCreateAfter}
-          onHandleDown={setHandleActiveId}
-          onHandleUp={() => setHandleActiveId(null)}
-          onDragStart={setDraggingId}
-          onDragEnd={handleDragEnd}
-          onDropOn={handleDropOn}
-          isDragging={draggingId === db._id}
-          isHandleActive={handleActiveId === db._id}
-          dragEnabled={dragEnabled}
-          onToggleDrag={handleToggleDrag}
-        />
-      ))}
+{filteredDbs.length === 0 ? (
+  <p className={`text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+    No data present yet
+  </p>
+) : (
+  filteredDbs.map((db) => (
+    <DraggableDatabaseSection
+      key={db._id}
+      db={db}
+      projectId={projectId}
+      isDark={isDark}
+      isViewOnly={isViewOnly}
+      onAddBelow={openCreateAfter}
+      onHandleDown={setHandleActiveId}
+      onHandleUp={() => setHandleActiveId(null)}
+      onDragStart={setDraggingId}
+      onDragEnd={handleDragEnd}
+      onDropOn={handleDropOn}
+      isDragging={draggingId === db._id}
+      isHandleActive={handleActiveId === db._id}
+      dragEnabled={dragEnabled}
+      onToggleDrag={handleToggleDrag}
+    />
+  ))
+)}
 
       {showCreateDbModal && !isViewOnly && (
         <ViewPickerCard
