@@ -182,7 +182,7 @@ export default function ProfilePage() {
             <button
               type="submit"
               disabled={isSaving}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-600 to-rose-600 px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-teal-600 to-rose-600 px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Save size={16} />
               {isSaving ? "Saving..." : "Save Changes"}
@@ -193,3 +193,4 @@ export default function ProfilePage() {
     </main>
   );
 }
+

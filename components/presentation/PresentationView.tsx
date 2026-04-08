@@ -148,6 +148,8 @@ export default function PresentationView({ databaseId, templateName = "blank" }:
   const [resizeDir, setResizeDir] = useState("");
   const [loadedOnce, setLoadedOnce] = useState(false); // ✅ Added here
   const canvasRef = useRef<HTMLDivElement>(null);
+  const lastLocalEditAtRef = useRef<number>(Date.now());
+  const lastAppliedRemoteSnapshotRef = useRef<string>("");
 
   const slide = slides[currentIndex];
 
@@ -169,6 +171,7 @@ export default function PresentationView({ databaseId, templateName = "blank" }:
       if (!res.ok) {
         console.error("Save failed", res.status, text);
       } else {
+        lastAppliedRemoteSnapshotRef.current = JSON.stringify(data);
         try {
           const json = text ? JSON.parse(text) : null;
           // optional: use json response if needed
@@ -201,7 +204,10 @@ export default function PresentationView({ databaseId, templateName = "blank" }:
         } else {
           try {
             const data = text ? JSON.parse(text) : null;
-            if (data?.slides?.length) setSlides(data.slides);
+            if (data?.slides?.length) {
+              lastAppliedRemoteSnapshotRef.current = JSON.stringify(data.slides);
+              setSlides(data.slides);
+            }
           } catch (e) {
             console.error("Failed to parse JSON from presentation GET:", e, text);
           }
@@ -233,6 +239,45 @@ export default function PresentationView({ databaseId, templateName = "blank" }:
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [editingId, selectedId, currentIndex, slides.length, updateSlide]);
+
+  useEffect(() => {
+    if (!loadedOnce) return;
+    lastLocalEditAtRef.current = Date.now();
+  }, [slides, loadedOnce]);
+
+  useEffect(() => {
+    if (!databaseId || !loadedOnce) return;
+
+    let cancelled = false;
+    const poll = async () => {
+      if (Date.now() - lastLocalEditAtRef.current < 1200) return;
+      if (editingId || isDragging || isResizing) return;
+
+      try {
+        const res = await fetch(`/api/databases/${databaseId}/presentation`, { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled || !Array.isArray(data?.slides)) return;
+
+        const snapshot = JSON.stringify(data.slides);
+        if (snapshot === lastAppliedRemoteSnapshotRef.current) return;
+
+        lastAppliedRemoteSnapshotRef.current = snapshot;
+        setSlides(data.slides);
+      } catch {
+        // Ignore transient collaborator polling errors.
+      }
+    };
+
+    const t = setInterval(() => {
+      void poll();
+    }, 1500);
+
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [databaseId, loadedOnce, editingId, isDragging, isResizing]);
 
   // ── Add elements ──
   const addTextBox = () => {

@@ -11,8 +11,12 @@ import {
 } from "lucide-react";
 
 interface ShareButtonProps {
-  projectId: string;
-  projectName: string;
+  resourceId?: string;
+  resourceName?: string;
+  resourceType?: "project" | "presentation" | "whiteboard" | "video" | "socialmedia";
+  projectId?: string;
+  projectName?: string;
+  collaboratorProjectId?: string;
 }
 
 interface ShareLink {
@@ -27,6 +31,11 @@ interface Invite {
   role: "viewer" | "commenter" | "editor";
   status: "pending" | "accepted";
   addedAt: string;
+}
+
+interface InviteFeedback {
+  type: "success" | "warning" | "error";
+  message: string;
 }
 
 /* ── Tiny helpers ── */
@@ -112,9 +121,37 @@ function RoleDropdown({
 /* ══════════════════════════════════════════════
    Main Component
 ══════════════════════════════════════════════ */
-export default function ShareButton({ projectId, projectName }: ShareButtonProps) {
+export default function ShareButton({
+  resourceId,
+  resourceName,
+  resourceType = "project",
+  projectId,
+  collaboratorProjectId,
+  projectName,
+}: ShareButtonProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
+  const targetId = resourceId || projectId || "";
+  const targetName = resourceName || projectName || "Untitled";
+  const collaboratorTargetId = resourceType === "project"
+    ? targetId
+    : (collaboratorProjectId || "");
+  const canManageCollaborators = Boolean(collaboratorTargetId);
+  const shareApiBase = resourceType === "project"
+    ? `/api/projects/${targetId}/share`
+    : resourceType === "presentation"
+      ? `/api/presentations/${targetId}/share`
+      : `/api/databases/${targetId}/share`;
+  const collaboratorApiBase = `/api/projects/${collaboratorTargetId}/collaborators`;
+  const sharedPathBase = resourceType === "project"
+    ? "/shared"
+    : resourceType === "presentation"
+      ? "/presentation/shared"
+      : resourceType === "whiteboard"
+        ? "/whiteboard/shared"
+        : resourceType === "video"
+          ? "/video-editing/shared"
+          : "/socialmedia/shared";
 
   const [showModal,    setShowModal]    = useState(false);
   const [activeTab,    setActiveTab]    = useState<"share" | "publish">("share");
@@ -129,6 +166,7 @@ export default function ShareButton({ projectId, projectName }: ShareButtonProps
   const [inviteEmail,   setInviteEmail]   = useState("");
   const [inviteRole,    setInviteRole]    = useState<"viewer"|"commenter"|"editor">("viewer");
   const [isSendingInv,  setIsSendingInv]  = useState(false);
+  const [inviteFeedback, setInviteFeedback] = useState<InviteFeedback | null>(null);
 
   /* permission for new generated link */
   const [linkPermission, setLinkPermission] = useState<"view"|"edit">("view");
@@ -157,8 +195,12 @@ export default function ShareButton({ projectId, projectName }: ShareButtonProps
   useEffect(() => {
     if (!showModal) return;
     loadShareLinks();
-    loadCollaborators();
-  }, [showModal, projectId]);
+    if (canManageCollaborators) {
+      loadCollaborators();
+    } else {
+      setInvites([]);
+    }
+  }, [showModal, targetId, canManageCollaborators]);
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
@@ -169,17 +211,19 @@ export default function ShareButton({ projectId, projectName }: ShareButtonProps
   }, [showModal]);
 
   const loadShareLinks = async () => {
+    if (!targetId) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/projects/${projectId}/share`);
+      const res = await fetch(shareApiBase);
       if (res.ok) { const d = await res.json(); setShareLinks(d.shareLinks || []); }
     } catch {}
     setIsLoading(false);
   };
 
   const loadCollaborators = async () => {
+    if (!canManageCollaborators) return;
     try {
-      const res = await fetch(`/api/projects/${projectId}/collaborators`);
+      const res = await fetch(collaboratorApiBase);
       if (res.ok) {
         const data = await res.json();
         setInvites(Array.isArray(data.collaborators) ? data.collaborators : []);
@@ -188,9 +232,10 @@ export default function ShareButton({ projectId, projectName }: ShareButtonProps
   };
 
   const generateLink = async () => {
+    if (!targetId) return;
     setIsGenerating(true);
     try {
-      const res = await fetch(`/api/projects/${projectId}/share`, {
+      const res = await fetch(shareApiBase, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ permission: linkPermission }),
@@ -201,9 +246,10 @@ export default function ShareButton({ projectId, projectName }: ShareButtonProps
   };
 
   const deleteShareLink = async (token: string) => {
+    if (!targetId) return;
     if (!confirm("Delete this share link?")) return;
     try {
-      const res = await fetch(`/api/projects/${projectId}/share`, {
+      const res = await fetch(shareApiBase, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
@@ -213,27 +259,55 @@ export default function ShareButton({ projectId, projectName }: ShareButtonProps
   };
 
   const sendInvite = async () => {
+    if (!canManageCollaborators) return;
     if (!inviteEmail.trim()) return;
     setIsSendingInv(true);
+    setInviteFeedback(null);
+
+    const targetEmail = inviteEmail.trim().toLowerCase();
+
     try {
-      const res = await fetch(`/api/projects/${projectId}/collaborators`, {
+      const res = await fetch(collaboratorApiBase, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
+        body: JSON.stringify({ email: targetEmail, role: inviteRole }),
       });
 
       if (res.ok) {
         const data = await res.json();
         setInvites(Array.isArray(data.collaborators) ? data.collaborators : []);
         setInviteEmail("");
+        if (data.emailSent) {
+          setInviteFeedback({
+            type: "success",
+            message: `Invite sent to ${targetEmail} and email delivered.`,
+          });
+        } else {
+          setInviteFeedback({
+            type: "warning",
+            message: `Invite saved for ${targetEmail}, but email could not be sent.`,
+          });
+        }
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setInviteFeedback({
+          type: "error",
+          message: data?.error || "Could not send invite.",
+        });
       }
-    } catch {}
+    } catch {
+      setInviteFeedback({
+        type: "error",
+        message: "Network error while sending invite.",
+      });
+    }
     setIsSendingInv(false);
   };
 
   const removeInvite = async (email: string) => {
+    if (!canManageCollaborators) return;
     try {
-      const res = await fetch(`/api/projects/${projectId}/collaborators`, {
+      const res = await fetch(collaboratorApiBase, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -252,8 +326,9 @@ export default function ShareButton({ projectId, projectName }: ShareButtonProps
   };
 
   const publishPage = async () => {
+    if (!targetId) return;
     try {
-      const res = await fetch(`/api/projects/${projectId}/share`, {
+      const res = await fetch(shareApiBase, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ permission: allowEditing ? "edit" : "view" }),
@@ -292,6 +367,11 @@ export default function ShareButton({ projectId, projectName }: ShareButtonProps
     { key: "anyone-edit",  label: "Anyone can edit",   sub: "Link holders can view & edit",    icon: Globe,  color: "text-emerald-500"},
   ] as const;
 
+  const shareTabs: Array<{ key: "share" | "publish"; label: string; icon: typeof Users }> = [
+    { key: "share", label: "Share", icon: Users },
+    { key: "publish", label: "Publish", icon: Globe as typeof Users },
+  ];
+
   return (
     <>
       {/* ── Trigger ── */}
@@ -315,13 +395,13 @@ export default function ShareButton({ projectId, projectName }: ShareButtonProps
             {/* ── Modal header ── */}
             <div className={`flex items-center justify-between px-6 py-4 border-b ${border} shrink-0`}>
               <div>
-                <h2 className="text-base font-bold">{projectName}</h2>
+                <h2 className="text-base font-bold">{targetName}</h2>
                 <p className={`text-xs mt-0.5 ${muted}`}>Manage access and publishing</p>
               </div>
 
               <div className="flex items-center gap-2">
                 {/* Active viewers */}
-                {activeViewers.length > 0 && (
+                {canManageCollaborators && activeViewers.length > 0 && (
                   <div className="flex items-center gap-1.5 mr-2">
                     <Wifi size={12} className="text-emerald-400 animate-pulse"/>
                     <div className="flex -space-x-1.5">
@@ -345,10 +425,7 @@ export default function ShareButton({ projectId, projectName }: ShareButtonProps
 
             {/* ── Tabs ── */}
             <div className={`flex gap-1 px-6 pt-3 pb-0 shrink-0`}>
-              {([
-                { key: "share",   label: "Share",   icon: Users  },
-                { key: "publish", label: "Publish",  icon: Globe  },
-              ] as const).map(tab => (
+              {shareTabs.map(tab => (
                 <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-t-lg text-sm font-semibold transition-all border-b-2 ${
                     activeTab === tab.key
@@ -369,6 +446,7 @@ export default function ShareButton({ projectId, projectName }: ShareButtonProps
                 <div className="px-6 py-5 space-y-5">
 
                   {/* Invite by email */}
+                  {canManageCollaborators && (
                   <div>
                     <p className={sectionLbl}>Invite People</p>
                     <div className={`flex items-center gap-2 p-1.5 rounded-xl border ${border} ${surface2}`}>
@@ -392,10 +470,24 @@ export default function ShareButton({ projectId, projectName }: ShareButtonProps
                         Invite
                       </button>
                     </div>
+                    {inviteFeedback && (
+                      <p
+                        className={`mt-2 text-xs ${
+                          inviteFeedback.type === "success"
+                            ? "text-emerald-500"
+                            : inviteFeedback.type === "warning"
+                            ? "text-amber-500"
+                            : "text-rose-500"
+                        }`}
+                      >
+                        {inviteFeedback.message}
+                      </p>
+                    )}
                   </div>
+                  )}
 
                   {/* People list */}
-                  {invites.length > 0 && (
+                  {canManageCollaborators && invites.length > 0 && (
                     <div>
                       <p className={sectionLbl}>People with access ({invites.length})</p>
                       <div className="space-y-1.5">
@@ -433,6 +525,7 @@ export default function ShareButton({ projectId, projectName }: ShareButtonProps
                   )}
 
                   {/* Access control */}
+                  {canManageCollaborators && (
                   <div>
                     <p className={sectionLbl}>General access</p>
                     <div className={`rounded-xl border ${border} overflow-hidden`}>
@@ -461,6 +554,7 @@ export default function ShareButton({ projectId, projectName }: ShareButtonProps
                       })}
                     </div>
                   </div>
+                  )}
 
                   {/* Generate link */}
                   <div>
@@ -510,7 +604,7 @@ export default function ShareButton({ projectId, projectName }: ShareButtonProps
                       <p className={sectionLbl}>Active links ({shareLinks.length})</p>
                       <div className="space-y-1.5">
                         {shareLinks.map(link => {
-                          const fullUrl = `${window.location.origin}/shared/${link.token}`;
+                          const fullUrl = `${window.location.origin}${sharedPathBase}/${link.token}`;
                           const isView = link.permission === "view";
                           return (
                             <div key={link.token}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo, use } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area,
   PieChart, Pie, ScatterChart, Scatter, ZAxis,
@@ -147,9 +147,12 @@ export default function ChartView({
   const chartWrapperRef = useRef<HTMLDivElement>(null);
   // const chartRef        = useRef<HTMLDivElement>(null);
   const saveTimer       = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveAbortRef    = useRef<AbortController | null>(null);
   const fileRef         = useRef<HTMLInputElement>(null);
   const [chartHeight, setChartHeight] = useState(300);
   const [showChart, setShowChart] = useState(false);
+  const lastLocalEditAtRef = useRef<number>(Date.now());
+  const lastAppliedRemoteSnapshotRef = useRef<string>("");
 
   useEffect(() => {
     if (!chartWrapperRef.current) return;
@@ -211,6 +214,7 @@ export default function ChartView({
         const json = await res.json();
         if (json.chart) {
           const c = json.chart;
+          lastAppliedRemoteSnapshotRef.current = JSON.stringify(c);
           if (c.config)          setConfig(prev => ({ ...prev, ...c.config }));
           if (c.columns?.length) setColumns(c.columns);
           if (c.rows?.length)    setRows(c.rows);
@@ -228,30 +232,119 @@ export default function ChartView({
     return () => controller.abort();
   }, [databaseId]);
 
+  // Track local edits to avoid remote poll clobbering in-flight changes.
+  useEffect(() => {
+    if (!loadedOnce) return;
+    lastLocalEditAtRef.current = Date.now();
+  }, [config, columns, rows, loadedOnce]);
+
+  // ── Live sync for collaborators (chart is not Yjs-backed yet) ──
+  useEffect(() => {
+    if (!databaseId || !loadedOnce) return;
+
+    let cancelled = false;
+
+    const poll = async () => {
+      // If user is actively editing, skip this tick.
+      if (Date.now() - lastLocalEditAtRef.current < 1000) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/databases/${encodeURIComponent(databaseId)}/chart`, {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+
+        const json = await res.json();
+        const remote = json?.chart;
+        if (!remote || cancelled) return;
+
+        const snapshot = JSON.stringify(remote);
+        if (snapshot === lastAppliedRemoteSnapshotRef.current) {
+          return;
+        }
+
+        lastAppliedRemoteSnapshotRef.current = snapshot;
+        if (remote.config) {
+          setConfig(prev => ({ ...prev, ...remote.config }));
+        }
+        if (Array.isArray(remote.columns) && remote.columns.length) {
+          setColumns(remote.columns);
+        }
+        if (Array.isArray(remote.rows)) {
+          setRows(remote.rows);
+        }
+      } catch {
+        // Ignore intermittent network errors in background polling.
+      }
+    };
+
+    const t = setInterval(() => {
+      void poll();
+    }, 1200);
+
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [databaseId, loadedOnce]);
+
   // ── Auto-save ──
   const scheduleSave = useCallback(() => {
     if (!loadedOnce || !databaseId) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
+
+    // Cancel the previous in-flight save so only the latest snapshot is persisted.
+    if (saveAbortRef.current) {
+      saveAbortRef.current.abort();
+      saveAbortRef.current = null;
+    }
+
     saveTimer.current = setTimeout(async () => {
+      const controller = new AbortController();
+      saveAbortRef.current = controller;
       setSaving(true);
       try {
         const response = await fetch(`/api/databases/${encodeURIComponent(databaseId)}/chart`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
           body: JSON.stringify({ chart: { config, columns, rows } }),
         });
         if (!response.ok) {
           throw new Error(`Failed to save chart (${response.status})`);
         }
+        lastAppliedRemoteSnapshotRef.current = JSON.stringify({ config, columns, rows });
         setSavedAt(new Date().toLocaleTimeString());
       } catch (e) {
-        console.error("Save chart failed:", e);
+        const err = e as Error;
+        if (err.name !== "AbortError" && err.message !== "Failed to fetch") {
+          console.error("Save chart failed:", e);
+        }
       }
-      finally { setSaving(false); }
+      finally {
+        if (saveAbortRef.current === controller) {
+          saveAbortRef.current = null;
+        }
+        setSaving(false);
+      }
     }, 2500);
   }, [loadedOnce, databaseId, config, columns, rows]);
 
   useEffect(() => { if (loadedOnce) scheduleSave(); }, [config, columns, rows, loadedOnce]);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+      }
+      if (saveAbortRef.current) {
+        saveAbortRef.current.abort();
+        saveAbortRef.current = null;
+      }
+    };
+  }, []);
 
   // ── Fetch project databases for table linking ──
   useEffect(() => {

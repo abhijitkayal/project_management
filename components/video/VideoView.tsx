@@ -97,6 +97,8 @@ export default function VideoView({ databaseId }: { databaseId: string }) {
   const videoRef     = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadDropRef = useRef<HTMLDivElement>(null);
+  const lastLocalEditAtRef = useRef<number>(Date.now());
+  const lastAppliedRemoteSnapshotRef = useRef<string>("");
   const sel = selectedClip;
 
   // ── Load from DB ──
@@ -111,6 +113,7 @@ export default function VideoView({ databaseId }: { databaseId: string }) {
             ...c,
             url: c.localFile ? "" : c.url,
           }));
+          lastAppliedRemoteSnapshotRef.current = JSON.stringify(restored);
           setClips(restored);
           setSelectedClip(restored[0]);
         }
@@ -136,12 +139,57 @@ export default function VideoView({ databaseId }: { databaseId: string }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ clips: saveable }),
         });
+        lastAppliedRemoteSnapshotRef.current = JSON.stringify(saveable);
         setSavedAt(new Date().toLocaleTimeString());
       } catch {}
       finally { setSaving(false); }
     }, 3000);
     return () => clearTimeout(t);
   }, [clips, databaseId, loadedOnce]);
+
+  useEffect(() => {
+    if (!loadedOnce) return;
+    lastLocalEditAtRef.current = Date.now();
+  }, [clips, loadedOnce]);
+
+  useEffect(() => {
+    if (!databaseId || !loadedOnce) return;
+
+    let cancelled = false;
+    const poll = async () => {
+      if (Date.now() - lastLocalEditAtRef.current < 1200) return;
+      if (editingOverlayId) return;
+
+      try {
+        const res = await fetch(`/api/databases/${databaseId}/video`, { cache: "no-store" });
+        if (!res.ok) return;
+        const json = await res.json();
+        if (cancelled || !Array.isArray(json?.clips)) return;
+
+        const restored = json.clips.map((c: Clip) => ({
+          ...c,
+          url: c.localFile ? "" : c.url,
+        }));
+        const snapshot = JSON.stringify(restored);
+        if (snapshot === lastAppliedRemoteSnapshotRef.current) return;
+
+        lastAppliedRemoteSnapshotRef.current = snapshot;
+        setClips(restored);
+        setSelectedClip((prev) => restored.find((c) => c.id === prev.id) || restored[0]);
+      } catch {
+        // Ignore transient collaborator polling errors.
+      }
+    };
+
+    const t = setInterval(() => {
+      void poll();
+    }, 1500);
+
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [databaseId, loadedOnce, editingOverlayId]);
 
   // ── Sync video props ──
   useEffect(() => {

@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:all": "concurrently -k -n APP,WS -c cyan,magenta \"npm:dev\" \"npm:websocket\"",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -82,6 +83,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "^16.1.1",
+    "concurrently": "^9.2.1",
     "shadcn-ui": "^0.9.5",
     "tailwindcss": "^4",
     "typescript": "^5"

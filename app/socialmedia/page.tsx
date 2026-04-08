@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 import { ArrowLeft, FolderOpen, Plus, Globe, Sparkles } from "lucide-react";
 import { SpinnerFullscreen } from "@/components/ui/spinner";
 import SocialMediaView from "@/components/socialmedia/SocialMediaView";
+import ShareButton from "@/components/ShareButton";
 import { useWorkspaceStore } from "@/app/store/WorkspaceStore";
 
 type SocialMediaRecord = {
@@ -156,14 +157,22 @@ export default function SocialMediaPage() {
       <div className={`min-h-screen ${isDark ? "bg-slate-950 text-white" : "bg-slate-50 text-slate-900"}`}>
         <div className="border-b border-white/10 bg-linear-to-r from-fuchsia-600 via-pink-600 to-orange-500 px-4 py-3 shadow-lg shadow-black/10">
           <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={() => router.push("/socialmedia")}
-              className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/20 transition"
-            >
-              <ArrowLeft size={16} />
-              Social media library
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => router.push("/socialmedia")}
+                className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm font-medium text-white backdrop-blur hover:bg-white/20 transition"
+              >
+                <ArrowLeft size={16} />
+                Social media library
+              </button>
+              <ShareButton
+                resourceId={selectedPost._id}
+                resourceName={selectedPost.name}
+                resourceType="socialmedia"
+                collaboratorProjectId={selectedPost.projectId}
+              />
+            </div>
             <div className="flex items-center gap-3 text-white">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/15 text-lg backdrop-blur">
                 {selectedPost.projectEmoji || "📁"}

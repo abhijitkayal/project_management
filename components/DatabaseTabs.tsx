@@ -1,7 +1,7 @@
 // components/DatabaseTabs.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Plus, GripVertical } from "lucide-react";
 import { useWorkspaceStore } from "@/app/store/WorkspaceStore";
@@ -207,8 +207,10 @@ export default function DatabaseTabs({
   const [draggingId,            setDraggingId]            = useState<string | null>(null);
   const [handleActiveId,        setHandleActiveId]        = useState<string | null>(null);
   const [dragEnabled,           setDragEnabled]           = useState(true);
+  const lastAutoScrolledDbRef = useRef<string | null>(null);
+  const isRefreshingRef = useRef(false);
 
-  const { databasesByProject, activeDatabaseId, setActiveDatabase } = useWorkspaceStore();
+  const { databasesByProject, activeDatabaseId, setActiveDatabase, fetchDatabases } = useWorkspaceStore();
   const dbs          = useMemo(() => databasesByProject[projectId] || [], [databasesByProject, projectId]);
   const selectedDbId = searchParams.get("db");
 
@@ -219,16 +221,60 @@ export default function DatabaseTabs({
   }, [dbs, activeDatabaseId, setActiveDatabase]);
 
   useEffect(() => {
+    if (!selectedDbId) {
+      lastAutoScrolledDbRef.current = null;
+      return;
+    }
+    if (lastAutoScrolledDbRef.current === selectedDbId) return;
+
     if (!selectedDbId) return;
     const exists = dbs.some((db) => db._id === selectedDbId);
     if (!exists) return;
+
+    lastAutoScrolledDbRef.current = selectedDbId;
     setActiveDatabase(selectedDbId);
     const frame = window.requestAnimationFrame(() => {
-      document.getElementById(`db-section-${selectedDbId}`)
-        ?.scrollIntoView({ behavior:"smooth", block:"start" });
+      // Passive sync/navigation should not move the global window.
+      scrollToDbSection(selectedDbId, 0, { allowWindowScroll: false });
     });
     return () => window.cancelAnimationFrame(frame);
   }, [selectedDbId, dbs, setActiveDatabase]);
+
+  // Keep collaborator views fresh without a full page refresh.
+  useEffect(() => {
+    if (!projectId) return;
+
+    const refresh = async () => {
+      if (isRefreshingRef.current) return;
+      isRefreshingRef.current = true;
+      try {
+        await fetchDatabases(projectId);
+      } finally {
+        isRefreshingRef.current = false;
+      }
+    };
+
+    const intervalId = window.setInterval(refresh, 4000);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refresh();
+      }
+    };
+
+    const onWindowFocus = () => {
+      refresh();
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("focus", onWindowFocus);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("focus", onWindowFocus);
+    };
+  }, [projectId, fetchDatabases]);
 
   const orderedDbs = useMemo(() => {
     if (orderedIds.length === 0) return dbs;
@@ -277,11 +323,16 @@ export default function DatabaseTabs({
     return document.scrollingElement as HTMLElement | null;
   };
 
-  const scrollToDbSection = (dbId: string, attempts = 0) => {
+  const scrollToDbSection = (
+    dbId: string,
+    attempts = 0,
+    options?: { allowWindowScroll?: boolean }
+  ) => {
+    const allowWindowScroll = options?.allowWindowScroll ?? true;
     const el = document.getElementById(`db-section-${dbId}`) as HTMLElement | null;
     if (!el) {
       if (attempts >= 40) return;
-      window.setTimeout(() => scrollToDbSection(dbId, attempts + 1), 50);
+      window.setTimeout(() => scrollToDbSection(dbId, attempts + 1, options), 50);
       return;
     }
 
@@ -291,6 +342,7 @@ export default function DatabaseTabs({
     const topGap = 12;
 
     if (scrollParent === document.scrollingElement || scrollParent === document.documentElement || scrollParent === document.body) {
+      if (!allowWindowScroll) return;
       const absoluteTop = window.scrollY + el.getBoundingClientRect().top;
       window.scrollTo({ top: Math.max(absoluteTop - topGap, 0), behavior: "smooth" });
       return;

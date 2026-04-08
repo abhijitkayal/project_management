@@ -13,6 +13,7 @@ import {
   Plus, Moon, Sun, FileText, Layout, Store,
   ChevronDown, ChevronRight, Menu, X,
   MoreHorizontal, Pin, PinOff, Smile,
+  User,
   Database, Table, Layout as LayoutIcon, CheckSquare,
   Film, BarChart2, FileCode, Link2, Globe, Presentation,
   Folder,
@@ -41,7 +42,7 @@ export const EMOJI_LIST = [
 
 /* ── Types ── */
 type MenuKey =
-  | "dashboard" | "project-board" | "whiteboard" | "presentation" | "video-editing" | "social-media" | "task-board"
+  | "dashboard" | "profile" | "project-board" | "whiteboard" | "presentation" | "video-editing" | "social-media" | "task-board"
   | "schedule"  | "activities"    | "inbox"
   | "template"  | "market-places";
 
@@ -139,7 +140,7 @@ function WorkspaceLogo({ open, isDark }: { open: boolean; isDark: boolean }) {
       }}
     >
       {/* animated gradient border ring */}
-      <div className="absolute inset-0 rounded-2xl p-[2px] z-0"
+      <div className="absolute inset-0 rounded-2xl p-0.5 z-0"
         style={{
           background:
             "linear-gradient(120deg,#0ea5e9,#a855f7,#ec4899,#f97316,#0ea5e9)",
@@ -320,7 +321,7 @@ function ProjectItem({
                 animate={{ opacity: 1, scale: 1,    y: 0 }}
                 exit={{    opacity: 0, scale: 0.95, y: -4 }}
                 transition={{ type: "spring", damping: 22, stiffness: 340 }}
-                className={`absolute right-0 top-full mt-1 z-[9999] w-52 rounded-2xl border overflow-hidden ${menuBg}`}
+                className={`absolute right-0 top-full mt-1 z-9999 w-52 rounded-2xl border overflow-hidden ${menuBg}`}
               >
                 {!emojiOpen ? (
                   <div className="p-1.5 space-y-0.5">
@@ -631,7 +632,7 @@ export default function Sidebar({ view, setView }: SidebarProps) {
         {/* NAV */}
         <div className={`${open ? "px-6 py-2" : "px-2 py-2"}`}>
           <div className="space-y-2 relative">
-            {open && <div className={`absolute left-[8px] top-0 bottom-0 w-px ${isDark?"bg-none":"bg-none"}`}/>}
+            {open && <div className={`absolute left-2 top-0 bottom-0 w-px ${isDark?"bg-none":"bg-none"}`}/>}
 
             {menuItems.map((item) => {
               const isActive  = pathname === item.path;
@@ -639,15 +640,15 @@ export default function Sidebar({ view, setView }: SidebarProps) {
 
               return (
                 <div key={item.key} className="rounded-xl overflow-visible relative">
-                  {open && <div className={`absolute left-[10px] top-0 w-[28px] h-[25px] rounded-bl-lg ${isDark?"border-gray-700":"border-gray-300"}`}/>}
+                  {open && <div className={`absolute left-2.5 top-0 w-7 h-[25px] rounded-bl-lg ${isDark?"border-gray-700":"border-gray-300"}`}/>}
 
                   <div className="relative cursor-pointer group" onClick={() => navigateTo(item.path)}>
-                    <div className={`absolute inset-0 w-60 ml-3 bg-gradient-to-r from-teal-600 to-rose-600 rounded-xl transition-opacity ${isActive?"opacity-100":"opacity-0 group-hover:opacity-40"}`}/>
+                    <div className={`absolute inset-0 w-60 ml-3 bg-linear-to-r from-teal-600 to-rose-600 rounded-xl transition-opacity ${isActive?"opacity-100":"opacity-0 group-hover:opacity-40"}`}/>
                     <div className={`relative flex items-center ${open?"gap-3 px-4":"justify-center px-2"} py-2 ${isActive?"text-white":isDark?"text-gray-400":"text-gray-700"}`}>
                       {item.key==="project-board" ? (
                         <span className="ml-3 flex items-center justify-center"><Folder size={open?22:24}/></span>
                       ) : itemPages.length > 0 ? (
-                        <span className="text-xl flex-shrink-0 ml-3">{itemPages[0].emoji||""}</span>
+                        <span className="text-xl shrink-0 ml-3">{itemPages[0].emoji||""}</span>
                       ) : (
                         <motion.div layout className={`grid h-full ${open?"w-10":"w-full"} place-content-center text-lg ml-3`}>
                           {item.icon}
@@ -700,17 +701,17 @@ export default function Sidebar({ view, setView }: SidebarProps) {
                       projectBoardOpen && (
                         <div className="pl-6 pb-2 space-y-0.5 relative">
                           {sortedProjects.length > 0 && (
-                            <div className={`absolute left-[30px] top-2 bottom-0 w-[2px] ${isDark?"bg-gray-600":"bg-gray-400"}`}/>
+                            <div className={`absolute left-[30px] top-2 bottom-0 w-0.5 ${isDark?"bg-gray-600":"bg-gray-400"}`}/>
                           )}
                           {sortedProjects.length === 0 ? (
-                            <p className={`text-xs px-3 py-2 rounded-xl ml-[32px] ${isDark?"text-gray-500 bg-white/5":"text-gray-600 bg-white"}`}>
+                            <p className={`text-xs px-3 py-2 rounded-xl ml-8 ${isDark?"text-gray-500 bg-white/5":"text-gray-600 bg-white"}`}>
                               No projects yet. Create one.
                             </p>
                           ) : (
                             sortedProjects.map((project) => (
                               <div key={project._id} className="relative">
-                                <div className={`absolute left-[8px] top-3 w-[28px] h-[14px] border-l-2 border-b-2 rounded-bl-lg ${isDark?"border-gray-600":"border-gray-400"}`}/>
-                                <div className="ml-[32px]">
+                                <div className={`absolute left-2 top-3 w-7 h-3.5 border-l-2 border-b-2 rounded-bl-lg ${isDark?"border-gray-600":"border-gray-400"}`}/>
+                                <div className="ml-8">
                                    <ProjectItem
                                     project={project} isDark={isDark}
                                     databases={databasesByProject[project._id] || []}
@@ -730,7 +731,7 @@ export default function Sidebar({ view, setView }: SidebarProps) {
                     ) : (
                       <div className="pl-6 pb-2 space-y-1 relative">
                         {itemPages.length > 0 && (
-                          <div className={`absolute left-[8px] top-2 bottom-0 w-[2px] ${isDark?"bg-gray-600":"bg-gray-400"}`}/>
+                          <div className={`absolute left-2 top-2 bottom-0 w-0.5 ${isDark?"bg-gray-600":"bg-gray-400"}`}/>
                         )}
                         {itemPages.slice(0,5).map((p, i) => {
                           const bgColors = [
@@ -742,12 +743,12 @@ export default function Sidebar({ view, setView }: SidebarProps) {
                           ];
                           return (
                             <div key={p._id} className="relative">
-                              <div className={`absolute left-[8px] top-0 w-[28px] h-[14px] border-l-2 border-b-2 rounded-bl-lg ${isDark?"border-gray-600":"border-gray-400"}`}/>
-                              <div className={`group text-xs px-3 py-2 rounded-lg cursor-pointer transition-all ml-[32px] ${bgColors[i%5]} ${isDark?"text-gray-300 hover:brightness-125":"text-gray-800 hover:brightness-95"}`}
+                              <div className={`absolute left-2 top-0 w-7 h-3.5 border-l-2 border-b-2 rounded-bl-lg ${isDark?"border-gray-600":"border-gray-400"}`}/>
+                              <div className={`group text-xs px-3 py-2 rounded-lg cursor-pointer transition-all ml-8 ${bgColors[i%5]} ${isDark?"text-gray-300 hover:brightness-125":"text-gray-800 hover:brightness-95"}`}
                                 onClick={(e) => { e.stopPropagation(); alert(`Open page: ${p.pageName}`); }}>
                                 <div className="flex items-center gap-2 justify-between">
                                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                                    <span className="text-lg flex-shrink-0">{p.emoji||""}</span>
+                                    <span className="text-lg shrink-0">{p.emoji||""}</span>
                                     <span className="truncate font-medium">{p.pageName}</span>
                                   </div>
                                   <button onClick={(e) => { e.stopPropagation(); if(confirm(`Delete "${p.pageName}"?`)) handleDeletePage(p._id); }}
@@ -767,6 +768,25 @@ export default function Sidebar({ view, setView }: SidebarProps) {
             })}
           </div>
 
+          {/* Mobile profile shortcut */}
+          <div className="lg:hidden mt-4 px-1">
+            <button
+              type="button"
+              onClick={() => navigateTo("/profile")}
+              className={`w-full flex items-center gap-2 rounded-xl px-4 py-3 transition-colors ${
+                pathname === "/profile"
+                  ? "bg-linear-to-r from-teal-600 to-rose-600 text-white"
+                  : isDark
+                  ? "text-gray-300 hover:bg-white/10"
+                  : "text-gray-700 hover:bg-rose-100"
+              }`}
+              title="Profile"
+            >
+              <User size={18} />
+              <span className="text-sm font-medium">Profile</span>
+            </button>
+          </div>
+
           {/* Theme Toggle */}
           {/* <div className={`mt-4 ${open?"px-1":"flex justify-center"}`}>
             {open ? (
@@ -775,12 +795,12 @@ export default function Sidebar({ view, setView }: SidebarProps) {
                 <div className={`flex w-full rounded-2xl p-1 gap-1 ${isDark?"bg-[#1a1b1f]":"bg-rose-100"}`}>
                   <button onClick={()=>setGlobalTheme(false)} title="Light mode"
                     style={!isDark?{boxShadow:"0 3px 0 #c0707a,inset 0 1px 0 rgba(255,255,255,0.4)"}:{}}
-                    className={`flex flex-1 items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 active:translate-y-[2px] active:shadow-none select-none ${!isDark?"bg-gradient-to-b from-white to-rose-50 text-amber-600":"text-gray-500 hover:text-gray-300 hover:bg-white/5"}`}>
+                    className={`flex flex-1 items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 active:translate-y-0.5 active:shadow-none select-none ${!isDark?"bg-linear-to-b from-white to-rose-50 text-amber-600":"text-gray-500 hover:text-gray-300 hover:bg-white/5"}`}>
                     <Sun size={15}/><span>Light</span>
                   </button>
                   <button onClick={()=>setGlobalTheme(true)} title="Dark mode"
                     style={isDark?{boxShadow:"0 3px 0 #050608,inset 0 1px 0 rgba(255,255,255,0.08)"}:{}}
-                    className={`flex flex-1 items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 active:translate-y-[2px] active:shadow-none select-none ${isDark?"bg-gradient-to-b from-[#2e3040] to-[#1e2030] text-indigo-300":"text-gray-400 hover:text-gray-600 hover:bg-black/5"}`}>
+                    className={`flex flex-1 items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 active:translate-y-0.5 active:shadow-none select-none ${isDark?"bg-linear-to-b from-[#2e3040] to-[#1e2030] text-indigo-300":"text-gray-400 hover:text-gray-600 hover:bg-black/5"}`}>
                     <Moon size={15}/><span>Dark</span>
                   </button>
                 </div>
@@ -788,7 +808,7 @@ export default function Sidebar({ view, setView }: SidebarProps) {
             ) : (
               <button onClick={()=>setGlobalTheme(!isDark)} title={isDark?"Light":"Dark"}
                 style={{ boxShadow:isDark?"0 4px 0 #050608,0 6px 12px rgba(0,0,0,0.5)":"0 4px 0 #d08090,0 6px 12px rgba(190,80,100,0.2)" }}
-                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150 active:translate-y-[3px] active:shadow-none ${isDark?"bg-gradient-to-b from-[#2e3040] to-[#1e2030] text-indigo-300":"bg-gradient-to-b from-white to-rose-50 text-amber-500"}`}>
+                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150 active:translate-y-[3px] active:shadow-none ${isDark?"bg-linear-to-b from-[#2e3040] to-[#1e2030] text-indigo-300":"bg-linear-to-b from-white to-rose-50 text-amber-500"}`}>
                 {isDark?<Moon size={18}/>:<Sun size={18}/>}
               </button>
             )}
@@ -796,17 +816,37 @@ export default function Sidebar({ view, setView }: SidebarProps) {
         </div>
       </div>
 
-      {/* Collapse button */}
-      <motion.button layout onClick={()=>setOpen((v)=>!v)}
-        className={`hidden lg:flex fixed bottom-0 left-0 border-t z-50 ${isDark?"border-gray-800 bg-[#0F1014] hover:bg-[#1a1b1e]":"border-rose-200 bg-rose-50 hover:bg-rose-100"}`}
-        style={{ width:open?"300px":"80px" }}>
-        <div className={`flex items-center ${open?"justify-start px-4":"justify-center"} p-2`}>
-          <motion.div layout className={`grid ${open?"size-10":"size-8"} place-content-center`}>
-            <FiChevronsRight className={`${!open&&"rotate-180"} ${isDark?"text-gray-400":"text-gray-600"}`} size={open?20:18}/>
-          </motion.div>
-          {open&&<motion.span layout className="text-xs font-medium">Hide</motion.span>}
-        </div>
-      </motion.button>
+      {/* Collapse/Profile buttons */}
+      <div
+        className={`hidden lg:flex fixed bottom-0 left-0 z-50 flex-col ${isDark ? "bg-[#0F1014]" : "bg-rose-50"}`}
+        style={{ width: open ? "300px" : "80px" }}
+      >
+        <motion.button layout onClick={()=>setOpen((v)=>!v)}
+          className={`border-t transition-colors ${isDark?"border-gray-800 hover:bg-[#1a1b1e]":"border-rose-200 hover:bg-rose-100"}`}>
+          <div className={`flex items-center ${open?"justify-start px-4":"justify-center"} p-2`}>
+            <motion.div layout className={`grid ${open?"size-10":"size-8"} place-content-center`}>
+              <FiChevronsRight className={`${!open&&"rotate-180"} ${isDark?"text-gray-400":"text-gray-600"}`} size={open?20:18}/>
+            </motion.div>
+            {open&&<motion.span layout className="text-xs font-medium">Hide</motion.span>}
+          </div>
+        </motion.button>
+
+        <button
+          type="button"
+          onClick={() => navigateTo("/profile")}
+          className={`flex items-center border-t transition-colors ${
+            pathname === "/profile"
+              ? "bg-linear-to-r from-teal-600 to-rose-600 text-white"
+              : isDark
+              ? "border-gray-800 text-gray-300 hover:bg-[#1a1b1e]"
+              : "border-rose-200 text-gray-700 hover:bg-rose-100"
+          } ${open ? "justify-start px-4 py-3 gap-2" : "justify-center py-3"}`}
+          title="Profile"
+        >
+          <User size={open ? 18 : 20} />
+          {open && <span className="text-xs font-medium">Profile</span>}
+        </button>
+      </div>
     </>
   );
 
@@ -845,7 +885,7 @@ export default function Sidebar({ view, setView }: SidebarProps) {
         <Modal isOpen={createModalOpen} onClose={closeCreateModal} title="New Page" isDark={isDark}>
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="text-3xl w-12 h-12 flex items-center justify-center rounded-xl border-2 border-dashed flex-shrink-0"
+              <div className="text-3xl w-12 h-12 flex items-center justify-center rounded-xl border-2 border-dashed shrink-0"
                 style={{borderColor:isDark?"rgba(255,255,255,0.1)":"#fecdd3"}}>{pageForm.emoji}</div>
               <input value={pageForm.pageName} onChange={(e)=>setPageForm((pv)=>({...pv,pageName:e.target.value}))}
                 placeholder="Page name..." autoFocus
@@ -862,7 +902,7 @@ export default function Sidebar({ view, setView }: SidebarProps) {
           title="New Project" isDark={isDark}>
           <div className="space-y-4">
             <div className="flex items-start gap-4">
-              <div ref={emojiPickerRef} className="relative flex-shrink-0">
+              <div ref={emojiPickerRef} className="relative shrink-0">
                 <button type="button" onClick={()=>setEmojiPickerOpen((v)=>!v)}
                   className={`w-14 h-14 rounded-2xl text-3xl flex items-center justify-center border-2 transition-all hover:scale-110 active:scale-95 select-none cursor-pointer ${emojiPickerOpen?(isDark?"border-teal-500 bg-teal-500/10":"border-teal-400 bg-teal-50"):(isDark?"border-white/10 bg-white/5 hover:border-white/25":"border-rose-200 bg-white hover:border-rose-400 shadow-sm")}`}>
                   {projectForm.emoji}
@@ -872,7 +912,7 @@ export default function Sidebar({ view, setView }: SidebarProps) {
                   {emojiPickerOpen&&(
                     <motion.div initial={{opacity:0,scale:0.95,y:-4}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:0.95,y:-4}}
                       transition={{type:"spring",damping:20,stiffness:320}}
-                      className={`absolute top-16 left-0 z-[999] w-64 rounded-2xl border shadow-2xl overflow-hidden ${isDark?"bg-[#1c1d21] border-white/10":"bg-white border-rose-100"}`}>
+                      className={`absolute top-16 left-0 z-999 w-64 rounded-2xl border shadow-2xl overflow-hidden ${isDark?"bg-[#1c1d21] border-white/10":"bg-white border-rose-100"}`}>
                       <div className="p-2 grid grid-cols-8 gap-0.5 max-h-56 overflow-y-auto">
                         {EMOJI_LIST.map((emoji)=>(
                           <button key={emoji} type="button" onClick={()=>{setProjectForm((pv)=>({...pv,emoji}));setEmojiPickerOpen(false);}}
@@ -895,7 +935,7 @@ export default function Sidebar({ view, setView }: SidebarProps) {
                 className={`w-full mt-1 p-4 rounded-2xl border outline-none transition-colors ${isDark?"bg-white/5 border-white/10 text-white focus:border-teal-500/40":"bg-white border-rose-100 text-gray-900 focus:border-teal-300 shadow-sm"}`}/>
             </div>
             <button onClick={handleCreateProject} disabled={!projectForm.name.trim()}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-teal-600 to-rose-600 text-white font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity mt-6">
+              className="w-full py-3 rounded-xl bg-linear-to-r from-teal-600 to-rose-600 text-white font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity mt-6">
               Create Project
             </button>
           </div>

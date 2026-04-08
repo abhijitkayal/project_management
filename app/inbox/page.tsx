@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 import AppShell from '@/components/AppShell';
 import {
@@ -13,7 +13,19 @@ import {
     Filter,
     User,
     Clock,
+    Check,
+    X,
 } from 'lucide-react';
+
+type CollaborationRequest = {
+    projectId: string;
+    projectName: string;
+    projectEmoji: string;
+    role: 'viewer' | 'commenter' | 'editor';
+    status: 'pending';
+    requestedAt: string | null;
+    invitedBy: string;
+};
 
 // Mock Data
 const mockMessages = [
@@ -47,6 +59,57 @@ export function InboxView() {
     const { resolvedTheme } = useTheme();
     const isDark = resolvedTheme === 'dark';
     const cardBg = isDark ? 'bg-[#1F2125] border-gray-800' : 'bg-white border-rose-100';
+    const [requests, setRequests] = useState<CollaborationRequest[]>([]);
+    const [loadingRequests, setLoadingRequests] = useState(true);
+    const [actingProjectId, setActingProjectId] = useState<string | null>(null);
+    const [requestMessage, setRequestMessage] = useState<string>('');
+
+    const loadRequests = useCallback(async () => {
+        setLoadingRequests(true);
+        try {
+            const res = await fetch('/api/collaboration-requests', { cache: 'no-store' });
+            if (res.ok) {
+                const data = await res.json();
+                setRequests(Array.isArray(data) ? data : []);
+            } else {
+                setRequests([]);
+            }
+        } catch {
+            setRequests([]);
+        } finally {
+            setLoadingRequests(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        void loadRequests();
+    }, [loadRequests]);
+
+    const handleRequestAction = async (projectId: string, action: 'accept' | 'reject') => {
+        setActingProjectId(projectId);
+        setRequestMessage('');
+
+        try {
+            const res = await fetch(`/api/projects/${projectId}/collaboration-requests`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action }),
+            });
+
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setRequestMessage(data?.error || 'Failed to update collaboration request.');
+                return;
+            }
+
+            setRequestMessage(action === 'accept' ? 'Collaboration request accepted.' : 'Collaboration request rejected.');
+            setRequests((prev) => prev.filter((r) => r.projectId !== projectId));
+        } catch {
+            setRequestMessage('Network error while updating collaboration request.');
+        } finally {
+            setActingProjectId(null);
+        }
+    };
 
     return (
         <div className={`flex-1 p-4 md:p-6 lg:p-8 transition-colors ${isDark ? 'bg-slate-950' : 'bg-rose-50'} flex flex-col md:flex-row gap-4 md:gap-8`}>
@@ -58,6 +121,68 @@ export function InboxView() {
                 </h1>
 
                 <div className={`p-4 md:p-6 rounded-2xl md:rounded-3xl border ${cardBg}`}>
+                    <div className={`mb-4 pb-4 border-b ${isDark ? 'border-gray-800' : 'border-rose-100'}`}>
+                        <div className="flex items-center justify-between gap-3">
+                            <h2 className={`text-sm md:text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                Collaboration Requests
+                            </h2>
+                            {!loadingRequests && (
+                                <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                    {requests.length} pending
+                                </span>
+                            )}
+                        </div>
+
+                        {requestMessage && (
+                            <p className={`text-xs mt-2 ${requestMessage.toLowerCase().includes('failed') || requestMessage.toLowerCase().includes('error') ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                {requestMessage}
+                            </p>
+                        )}
+
+                        <div className="mt-3 space-y-2">
+                            {loadingRequests ? (
+                                <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Loading requests...</p>
+                            ) : requests.length === 0 ? (
+                                <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>No pending collaboration requests.</p>
+                            ) : (
+                                requests.map((req) => (
+                                    <div
+                                        key={req.projectId}
+                                        className={`rounded-xl border px-3 py-2.5 ${isDark ? 'border-gray-700 bg-gray-900/40' : 'border-rose-100 bg-rose-50/60'}`}
+                                    >
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <p className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                                    <span className="mr-1">{req.projectEmoji || '📁'}</span>
+                                                    {req.projectName}
+                                                </p>
+                                                <p className={`text-xs mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                    Role: {req.role} {req.invitedBy ? `• Invited by ${req.invitedBy}` : ''}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <button
+                                                    onClick={() => handleRequestAction(req.projectId, 'accept')}
+                                                    disabled={actingProjectId === req.projectId}
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50"
+                                                >
+                                                    <Check size={13} /> Accept
+                                                </button>
+                                                <button
+                                                    onClick={() => handleRequestAction(req.projectId, 'reject')}
+                                                    disabled={actingProjectId === req.projectId}
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-600 text-white hover:bg-rose-500 disabled:opacity-50"
+                                                >
+                                                    <X size={13} /> Reject
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b">
                         <div className={`flex items-center gap-2 sm:gap-4 text-xs sm:text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
                             <button className="text-teal-500 font-bold">Primary (2)</button>

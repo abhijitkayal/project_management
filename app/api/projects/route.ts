@@ -14,26 +14,6 @@ export async function GET() {
 
   const authEmail = String(authUser.email || "").trim().toLowerCase();
 
-  // If a logged-in user was invited by email, mark their invite as accepted.
-  if (authEmail) {
-    await Project.updateMany(
-      {
-        ownerId: { $ne: authUser.userId },
-        collaborators: {
-          $elemMatch: { email: authEmail, status: "pending" },
-        },
-      },
-      {
-        $set: {
-          "collaborators.$[c].status": "accepted",
-        },
-      },
-      {
-        arrayFilters: [{ "c.email": authEmail, "c.status": "pending" }],
-      }
-    );
-  }
-
   const projects = await Project.find({
     $or: [
       { ownerId: authUser.userId },
@@ -42,7 +22,7 @@ export async function GET() {
             collaborators: {
               $elemMatch: {
                 email: authEmail,
-                status: { $in: ["pending", "accepted"] },
+                status: "accepted",
               },
             },
           }

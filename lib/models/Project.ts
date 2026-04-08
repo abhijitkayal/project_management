@@ -44,6 +44,17 @@ const ProjectSchema = new Schema(
         addedAt: { type: Date, default: Date.now },
       },
     ],
+
+    // Pending requests that must be accepted before collaboration access is granted.
+    collaborationRequests: [
+      {
+        email: { type: String, required: true },
+        role: { type: String, enum: ["viewer", "commenter", "editor"], default: "viewer" },
+        status: { type: String, enum: ["pending"], default: "pending" },
+        requestedAt: { type: Date, default: Date.now },
+        invitedBy: { type: String, default: "" },
+      },
+    ],
   },
   { timestamps: true }
 );

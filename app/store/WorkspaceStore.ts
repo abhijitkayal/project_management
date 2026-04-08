@@ -74,7 +74,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   fetchProjects: async () => {
     try {
-      const res  = await fetch("/api/projects");
+      const res  = await fetch("/api/projects", { cache: "no-store" });
       const data = await res.json();
       set({ projects: Array.isArray(data) ? data : [] });
     } catch (err) { console.error("fetchProjects:", err); }
@@ -82,7 +82,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   fetchDatabases: async (projectId) => {
     try {
-      const res  = await fetch(`/api/databases?projectId=${projectId}`);
+      const res  = await fetch(`/api/databases?projectId=${projectId}`, { cache: "no-store" });
       const data = await res.json();
       set((state) => ({
         databasesByProject: {

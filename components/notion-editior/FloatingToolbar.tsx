@@ -1,19 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { CSSProperties, useMemo } from "react";
 
-export default function HoverTooltip({ target }: any) {
-  const [style, setStyle] = useState<any>(null);
+type HoverTooltipProps = {
+  target: HTMLElement | null;
+};
 
-  useEffect(() => {
-    if (!target) return;
+export default function HoverTooltip({ target }: HoverTooltipProps) {
+  const style = useMemo<CSSProperties | null>(() => {
+    if (!target) return null;
 
     const rect = target.getBoundingClientRect();
-
-    setStyle({
+    return {
+      position: "absolute",
       top: rect.top + window.scrollY + rect.height / 2,
       left: rect.right + 10,
-    });
+    };
   }, [target]);
 
   if (!target || !style) return null;
@@ -21,11 +23,7 @@ export default function HoverTooltip({ target }: any) {
   return (
     <div
       className="notion-tooltip"
-      style={{
-        position: "absolute",
-        top: style.top,
-        left: style.left,
-      }}
+      style={style}
     >
       <div className="tooltip-title">Table view</div>
       <div className="tooltip-desc">

@@ -149,6 +149,8 @@ export default function DocumentationView({
   const imgUploadRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
   const savedRangeRef = useRef<Range | null>(null);
+  const lastLocalEditAtRef = useRef<number>(Date.now());
+  const lastAppliedRemoteSnapshotRef = useRef<string>("");
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 
@@ -169,6 +171,7 @@ export default function DocumentationView({
         const json = await res.json();
         if (json.document) {
           const doc = json.document;
+          lastAppliedRemoteSnapshotRef.current = JSON.stringify(doc);
           if (doc.title)       setTitle(doc.title);
           if (doc.comments)    setComments(doc.comments);
           if (doc.versions)    setVersions(doc.versions);
@@ -204,6 +207,23 @@ export default function DocumentationView({
     setTimeout(load, 100);
   }, [databaseId, templateName]);
 
+  useEffect(() => {
+    if (!loadedOnce) return;
+    lastLocalEditAtRef.current = Date.now();
+  }, [title, comments, versions, lineSpacing, loadedOnce]);
+
+  useEffect(() => {
+    const editorEl = editorRef.current;
+    if (!editorEl) return;
+    const markEdited = () => {
+      lastLocalEditAtRef.current = Date.now();
+    };
+    editorEl.addEventListener("input", markEdited);
+    return () => {
+      editorEl.removeEventListener("input", markEdited);
+    };
+  }, [loadedOnce]);
+
   // ── Auto-save ──
   const scheduleSave = useCallback(() => {
     if (!loadedOnce) return;
@@ -227,6 +247,13 @@ export default function DocumentationView({
             lineSpacing,
           },
         }),
+      });
+      lastAppliedRemoteSnapshotRef.current = JSON.stringify({
+        title,
+        content: editorRef.current.innerHTML,
+        comments,
+        versions,
+        lineSpacing,
       });
       setSavedAt(new Date().toLocaleTimeString());
     } catch (e) { console.error("Save failed:", e); }
@@ -252,6 +279,49 @@ export default function DocumentationView({
     });
     setOutline(items);
   }, []);
+
+  useEffect(() => {
+    if (!databaseId || !loadedOnce) return;
+
+    let cancelled = false;
+    const poll = async () => {
+      if (Date.now() - lastLocalEditAtRef.current < 1200) return;
+      if (editorRef.current && editorRef.current.contains(document.activeElement)) return;
+
+      try {
+        const res = await fetch(`/api/databases/${databaseId}/documents`, { cache: "no-store" });
+        if (!res.ok) return;
+        const json = await res.json();
+        const remote = json?.document;
+        if (!remote || cancelled) return;
+
+        const snapshot = JSON.stringify(remote);
+        if (snapshot === lastAppliedRemoteSnapshotRef.current) return;
+
+        lastAppliedRemoteSnapshotRef.current = snapshot;
+        if (typeof remote.title === "string") setTitle(remote.title);
+        if (Array.isArray(remote.comments)) setComments(remote.comments);
+        if (Array.isArray(remote.versions)) setVersions(remote.versions);
+        if (typeof remote.lineSpacing === "string") setLineSpacing(remote.lineSpacing);
+        if (editorRef.current && typeof remote.content === "string" && editorRef.current.innerHTML !== remote.content) {
+          editorRef.current.innerHTML = remote.content;
+          updateOutline();
+          updateWordCount();
+        }
+      } catch {
+        // Ignore transient collaborator polling errors.
+      }
+    };
+
+    const t = setInterval(() => {
+      void poll();
+    }, 1500);
+
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [databaseId, loadedOnce, updateOutline, updateWordCount]);
 
   const exec = useCallback((cmd: string, val?: string) => {
     if (savedRangeRef.current) {

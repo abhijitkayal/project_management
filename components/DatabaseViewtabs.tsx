@@ -11,6 +11,7 @@ import {
 import FilterPanel,       { type FilterRule }  from "./FilterPanel";
 import SortPanel,         { type SortRule }     from "./SortPanel";
 import ViewSettingsPanel, { type ViewSettings } from "./ViewSettingsPanel";
+import { useWorkspaceStore } from "@/app/store/WorkspaceStore";
 
 /* ── Types ────────────────────────────────────────────────────── */
 export interface DbView {
@@ -87,6 +88,7 @@ export default function DatabaseViewTabs({
   views, activeViewId, isDark,
   onViewChange, onViewsChange,
 }: DatabaseViewTabsProps) {
+  const { fetchDatabases } = useWorkspaceStore();
   const MAX_VISIBLE = 3;
 
   const [showMore,    setShowMore]    = useState(false);
@@ -106,6 +108,18 @@ const [icon, setIcon] = useState(dbIcon);
 const [editingIcon, setEditingIcon] = useState(false);
 const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 const emojiPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!editing) {
+      setName(dbName);
+    }
+  }, [dbName, editing]);
+
+  useEffect(() => {
+    if (!showEmojiPicker && !editingIcon) {
+      setIcon(dbIcon);
+    }
+  }, [dbIcon, showEmojiPicker, editingIcon]);
 
   const COMMON_EMOJIS = [
     "📊", "📈", "📉", "📋", "📑", "📃", "📄", "📑", "🗂️", "🗳️",
@@ -194,11 +208,15 @@ const emojiPickerRef = useRef<HTMLDivElement>(null);
 
   const updateDbIcon = async () => {
   try {
-    await fetch(`/api/databases/${dbId}`, {
+      const res = await fetch(`/api/databases/${dbId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ icon }),
     });
+      if (!res.ok) {
+        throw new Error(`Icon update failed (${res.status})`);
+      }
+      await fetchDatabases(projectId);
   } catch (err) {
     console.error("Icon update failed", err);
   }
@@ -220,11 +238,15 @@ const emojiPickerRef = useRef<HTMLDivElement>(null);
 
   const updateDbName = async () => {
   try {
-    await fetch(`/api/databases/${dbId}`, {
+      const res = await fetch(`/api/databases/${dbId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
     });
+      if (!res.ok) {
+        throw new Error(`Name update failed (${res.status})`);
+      }
+      await fetchDatabases(projectId);
   } catch (_err) {
     console.error("Update failed", _err);
   }

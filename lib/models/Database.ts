@@ -55,6 +55,14 @@ const DatabaseSchema = new Schema(
     socialMediaData:  { type: Schema.Types.Mixed, default: null },
     documentData:     { type: Schema.Types.Mixed, default: null },
     chartData:        { type: Schema.Types.Mixed, default: null },
+    shareLinks: [
+      {
+        token: { type: String, required: true, index: true },
+        permission: { type: String, enum: ["view", "edit"], default: "view" },
+        createdAt: { type: Date, default: Date.now },
+        expiresAt: { type: Date, default: null },
+      },
+    ],
   },
   { timestamps: true }
 );
