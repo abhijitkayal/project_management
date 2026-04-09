@@ -1,3 +1,6 @@
+"use client"
+
+import { useState } from "react"
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { DataTable } from "@/components/data-table"
 import { SectionCards } from "@/components/section-cards"
@@ -7,9 +10,11 @@ import Sidebar from "@/components/Sidebar"
 import data from "./data.json"
 
 export default function Page() {
+  const [view, setView] = useState("Dashboard")
+
   return (
     <div className="flex min-h-screen w-full overflow-hidden bg-background text-foreground">
-      <Sidebar view="Dashboard" setView={() => {}} />
+      <Sidebar view={view} setView={setView} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <SiteHeader />

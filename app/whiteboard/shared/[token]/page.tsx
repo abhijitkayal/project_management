@@ -30,7 +30,7 @@ export default function SharedWhiteboardPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [resource, setResource] = useState<SharedResourceResponse["resource"]>(null);
+  const [resource, setResource] = useState<SharedResourceResponse["resource"] | null>(null);
   const [permission, setPermission] = useState<"view" | "edit">("view");
 
   useEffect(() => {

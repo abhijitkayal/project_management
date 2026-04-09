@@ -29,7 +29,7 @@ export default function SharedPresentationPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [presentation, setPresentation] = useState<SharedPresentationResponse["presentation"]>(null);
+  const [presentation, setPresentation] = useState<SharedPresentationResponse["presentation"] | null>(null);
   const [permission, setPermission] = useState<"view" | "edit">("view");
 
   useEffect(() => {

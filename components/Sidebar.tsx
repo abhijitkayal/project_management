@@ -625,7 +625,7 @@ export default function Sidebar({ view, setView }: SidebarProps) {
 
   const SidebarContent = () => (
     <>
-      <div className={`flex-1 overflow-y-auto pb-16 ${isDark ? "bg-gray-900" : "bg-rose-50"}`}>
+      <div className={`flex-1 overflow-y-auto pb-16 ${isDark ? "bg-gray-900" : "bg-zinc-100"}`}>
 
         {/* ── LOGO ── */}
         {/* <div className={`${open ? "pt-5 pb-3" : "px-3 pt-4 pb-2"}`}> */}
@@ -636,7 +636,7 @@ export default function Sidebar({ view, setView }: SidebarProps) {
   alt="Work Space"
   // width={100}
   // height={100}
-  className="w-50 h-45 object-contain flex items-center justify-center mx-auto -mt-15  "
+  className="w-50 h-45 object-contain flex items-center justify-center mx-auto -mt-15"
 />
 {/* <hr className={`w-full`} /> */}
 </div>

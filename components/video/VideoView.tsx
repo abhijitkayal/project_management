@@ -109,7 +109,7 @@ export default function VideoView({ databaseId }: { databaseId: string }) {
         const json = await res.json();
         if (json.clips?.length) {
           // Filter out any local blob URLs (they won't survive refresh)
-          const restored = json.clips.map((c: Clip) => ({
+          const restored: Clip[] = json.clips.map((c: Clip) => ({
             ...c,
             url: c.localFile ? "" : c.url,
           }));
@@ -166,7 +166,7 @@ export default function VideoView({ databaseId }: { databaseId: string }) {
         const json = await res.json();
         if (cancelled || !Array.isArray(json?.clips)) return;
 
-        const restored = json.clips.map((c: Clip) => ({
+        const restored: Clip[] = json.clips.map((c: Clip) => ({
           ...c,
           url: c.localFile ? "" : c.url,
         }));
