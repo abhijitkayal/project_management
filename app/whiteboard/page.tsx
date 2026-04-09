@@ -49,6 +49,8 @@ export default function WhiteboardPage() {
   const [creating, setCreating] = useState(false);
   const [boardName, setBoardName] = useState("Untitled whiteboard");
   const [projectId, setProjectId] = useState("");
+  
+
 
   useEffect(() => {
     let mounted = true;
@@ -265,7 +267,7 @@ export default function WhiteboardPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-6 py-8">
+      <div className={`mx-auto max-w-7xl px-6 py-8 ${isDark?"bg-transparent":"bg-white"}`}>
         <div className="mb-5 flex items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">Existing whiteboards</h2>

@@ -8,6 +8,8 @@ import DatabaseTabs from "@/components/DatabaseTabs";
 import CreateDatabasePopover from "@/components/CreateDatabasePopover";
 import { useTheme } from "next-themes";
 import { SpinnerFullscreen } from "@/components/ui/spinner";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SiteHeader } from "@/components/site-header";
 
 export default function ProjectPage() {
   const { resolvedTheme} = useTheme();
@@ -47,8 +49,10 @@ export default function ProjectPage() {
   }
 
   return (
-    <div className={`min-h-screen ${isDark ? "bg-zinc-900 text-white" : "bg-zinc-100 text-gray-900"}`}>
-      <div className="w-full max-w-7xl mx-auto px-6 py-10">
+    <div className={`min-h-screen rounded-2xl border border-gray-300 ${isDark ? "bg-zinc-900 text-white" : "bg-white text-gray-900"}`}>
+      {/* <AppSidebar/> */}
+      <SiteHeader/>
+      <div className="w-full max-w-7xl mx-auto px-6 py-10 ">
         <ProjectHeader project={project} />
 
         <div className="mt-8 flex items-center justify-between">

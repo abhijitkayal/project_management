@@ -255,7 +255,7 @@ function CreateTaskModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className={`w-full max-w-2xl rounded-2xl border p-5 ${isDark ? "border-gray-700 bg-zinc-900 text-gray-100" : "border-gray-200 bg-zinc-100 text-gray-900"}`}>
+      <div className={`w-full max-w-2xl rounded-2xl border p-5 ${isDark ? "border-gray-700 bg-slate-900 text-gray-100" : "border-gray-200 bg-zinc-100 text-gray-900"}`}>
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold">Create Task ({defaultStatus})</h2>

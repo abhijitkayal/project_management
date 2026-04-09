@@ -19,6 +19,14 @@ export function NavMain({
     icon?: React.ReactNode
   }[]
 }) {
+  const toIdRoute = (value: string) =>
+    `/page/${encodeURIComponent(
+      value
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+    )}`
+
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
@@ -46,9 +54,11 @@ export function NavMain({
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title}>
-                {item.icon}
-                <span>{item.title}</span>
+              <SidebarMenuButton asChild tooltip={item.title}>
+                <a href={item.url === "#" ? toIdRoute(item.title) : item.url}>
+                  {item.icon}
+                  <span>{item.title}</span>
+                </a>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}

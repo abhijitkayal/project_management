@@ -28,6 +28,13 @@ export function NavDocuments({
   }[]
 }) {
   const { isMobile } = useSidebar()
+  const toIdRoute = (value: string) =>
+    `/page/${encodeURIComponent(
+      value
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+    )}`
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
@@ -36,7 +43,7 @@ export function NavDocuments({
         {items.map((item) => (
           <SidebarMenuItem key={item.name}>
             <SidebarMenuButton asChild>
-              <a href={item.url}>
+              <a href={item.url === "#" ? toIdRoute(item.name) : item.url}>
                 {item.icon}
                 <span>{item.name}</span>
               </a>

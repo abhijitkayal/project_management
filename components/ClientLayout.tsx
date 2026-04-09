@@ -9,6 +9,7 @@ import Header from '@/components/Header';
 import { SpinnerFullscreen } from './ui/spinner';
 import { useAuth } from './AuthContext';
 import type { Collaborator } from './Header';
+import { AppSidebar } from './app-sidebar';
 
 interface LayoutContextType {
   view: string;
@@ -230,10 +231,11 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
       <div className="flex h-screen bg-background text-foreground overflow-hidden">
         <Sidebar view={view} setView={setView} />
 
+        {/* <AppSidebar/> */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <Header collaborators={headerCollaborators} title={headerTitle} />
+          {/* <Header collaborators={headerCollaborators} title={headerTitle} /> */}
 
-          <div className={`flex-1 overflow-y-auto transition-colors duration-300 ${isDark ? 'bg-slate-950' : 'bg-zinc-100'}`}>
+          <div className={`flex-1 p-2 overflow-y-auto transition-colors duration-300 ${isDark ? 'bg-gray-900' : 'bg-zinc-50'}`}>
             <AnimatePresence mode="wait">
               {isLoading ? (
                 <motion.div

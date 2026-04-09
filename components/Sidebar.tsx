@@ -398,7 +398,7 @@ function ProjectItem({
                     className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-colors text-left ${
                       pathname.includes(db._id)
                         ? isDark ? "bg-blue-600/15 text-blue-300" : "bg-blue-50 text-blue-700"
-                        : isDark ? "text-gray-500 hover:bg-white/5 hover:text-gray-300" : "text-gray-600 hover:bg-rose-50 hover:text-gray-900"
+                        : isDark ? "text-gray-500 hover:bg-white/5 hover:text-gray-300" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                     }`}
                   >
                     <span className="text-sm leading-none shrink-0">{db.icon}</span>
@@ -596,7 +596,7 @@ export default function Sidebar({ view, setView }: SidebarProps) {
 
   if (!mounted) return null;
 
-  const hoverClass = isDark ? "hover:bg-white/5" : "hover:bg-rose-200/50";
+  const hoverClass = isDark ? "hover:bg-white/5" : "hover:bg-gray-200/50";
 
   const sortedProjects = [
     ...projects.filter((p) => pinnedProjects.has(p._id)),
@@ -625,18 +625,18 @@ export default function Sidebar({ view, setView }: SidebarProps) {
 
   const SidebarContent = () => (
     <>
-      <div className={`flex-1 overflow-y-auto pb-16 ${isDark ? "bg-gray-900" : "bg-zinc-100"}`}>
+      <div className={`flex-1 overflow-y-auto no-scrollbar pb-16 ${isDark ? "bg-gray-900" : "bg-zinc-50"}`}>
 
         {/* ── LOGO ── */}
         {/* <div className={`${open ? "pt-5 pb-3" : "px-3 pt-4 pb-2"}`}> */}
           {/* <WorkspaceLogo open={open} isDark={isDark} /> */}
-          <div className={`w-full h-20 ${isDark ? "bg-[#0F1014] border-none" : "bg-teal-50 border-b border-teal-50"} pt-3 px-4 mb-4`}>
+          <div className={`w-full h-20 ${isDark ? "bg-transparent border-none" : "bg-zinc-50"} pt-3 px-4 mb-4`}>
           <Image
   src={logo}
   alt="Work Space"
   // width={100}
   // height={100}
-  className="w-50 h-45 object-contain flex items-center justify-center mx-auto -mt-15"
+  className="w-30 h-35 object-contain ml-2  -mt-13"
 />
 {/* <hr className={`w-full`} /> */}
 </div>
@@ -644,7 +644,7 @@ export default function Sidebar({ view, setView }: SidebarProps) {
 
         {/* NAV */}
         <div className={`${open ? "px-6 py-2" : "px-2 py-2"}`}>
-          <div className="space-y-2 relative">
+          <div className="space-y-2 relative -mt-10 -ml-5">
             {open && <div className={`absolute left-[8px] top-0 bottom-0 w-px ${isDark?"bg-none":"bg-none"}`}/>}
 
             {menuItems.map((item) => {
@@ -656,7 +656,7 @@ export default function Sidebar({ view, setView }: SidebarProps) {
                   {open && <div className={`absolute left-[10px] top-0 w-[28px] h-[25px] rounded-bl-lg ${isDark?"border-gray-700":"border-gray-300"}`}/>}
 
                   <div className="relative cursor-pointer group" onClick={() => navigateTo(item.path)}>
-                    <div className={`absolute inset-0 w-60 ml-3 bg-gradient-to-r from-teal-600 to-rose-600 rounded-xl transition-opacity ${isActive?"opacity-100":"opacity-0 group-hover:opacity-40"}`}/>
+                    <div className={`absolute inset-0 w-60 ml-3  bg-black rounded-xl transition-opacity ${isActive?"opacity-100":"opacity-0 group-hover:opacity-10"}`}/>
                     <div className={`relative flex items-center ${open?"gap-3 px-4":"justify-center px-2"} py-2 ${isActive?"text-white":isDark?"text-gray-400":"text-gray-700"}`}>
                       {item.key==="project-board" ? (
                         <span className="ml-3 flex items-center justify-center"><Folder size={open?22:24}/></span>

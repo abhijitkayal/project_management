@@ -109,7 +109,7 @@ function DraggableDatabaseSection({
       onDragOver={dragEnabled  ? (e) => e.preventDefault() : undefined}
       onDrop={dragEnabled      ? () => onDropOn(db._id) : undefined}
       id={`db-section-${db._id}`}
-      className={`relative bg-background text-foreground ${isDark ? "bg-zinc-900" : "bg-zinc-100"} transition-all overflow-hidden max-h-[700px] flex flex-col ${
+      className={`relative bg-background text-foreground ${isDark ? "bg-zinc-900" : "bg-transparent"} transition-all overflow-hidden max-h-[700px] flex flex-col ${
         isDragging && dragEnabled ? "opacity-60" : ""
       }`}
     >
@@ -117,7 +117,7 @@ function DraggableDatabaseSection({
       <div className={`group flex items-center shrink-0 text-sm px-3 py-1 border-b ${
         isDark
           ? "text-gray-300 bg-transparent border-gray-700/60"
-          : "text-gray-700 bg-gray-50 border-gray-200"
+          : "text-gray-700 bg-transparent border-gray-200"
       }`}>
         <span
           onMouseDown={() => onHandleDown(db._id)}
@@ -136,7 +136,7 @@ function DraggableDatabaseSection({
           <GripVertical size={14} />
         </span>
 
-        {!isViewOnly && (
+        {/* {!isViewOnly && (
           <button
             type="button"
             onClick={() => onAddBelow(db._id)}
@@ -147,7 +147,7 @@ function DraggableDatabaseSection({
           >
             <Plus size={14} />
           </button>
-        )}
+        )} */}
       </div>
 
       {/*

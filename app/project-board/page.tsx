@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useWorkspaceStore } from "@/app/store/WorkspaceStore";
 import { Trash2, X } from "lucide-react";
+import { SiteHeader } from "@/components/site-header";
 
 
 /* ── Confirm Delete Modal ── */
@@ -162,7 +163,8 @@ export default function ProjectsBoardPage() {
 );
 
   return (
-    <div className={`min-h-screen ${isDark ? "bg-zinc-900 text-gray-300" : "bg-zinc-100 text-gray-900"}`}>
+    <div className={`min-h-screen border border-gray-300 rounded-2xl ${isDark ? "bg-zinc-900 text-gray-300" : "bg-white text-gray-900"}`}>
+      <SiteHeader/>
       {/* Confirm delete modal */}
       <ConfirmDeleteModal
         open={confirmDelete.open}
